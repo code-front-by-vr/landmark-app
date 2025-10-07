@@ -9,17 +9,32 @@ export default defineConfigWithVueTs(
     files: ['**/*.{ts,mts,tsx,vue}'],
   },
 
-  globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**']),
+  globalIgnores([
+    '**/dist/**',
+    '**/dist-ssr/**',
+    '**/coverage/**',
+    '**/node_modules/**',
+    '**/.git/**',
+    '**/public/**',
+    '**/.env*',
+    '**/.git*',
+    '**/.husky/**',
+    '**/.prettier*',
+    '**/.vscode/**',
+    '**/jsconfig.json',
+    '**/eslint.config.js',
+  ]),
 
   pluginVue.configs['flat/essential'],
   vueTsConfigs.recommended,
   skipFormatting,
   {
     rules: {
-      'no-unused-vars': ['error'],
-      'vue/multi-word-component-names': 'off',
-      '@typescript-eslint/no-unused-vars': ['warn'],
       'no-console': ['warn', { allow: ['warn', 'error'] }],
+      'no-var': 'error',
+      'no-unused-vars': 'off',
+      'vue/multi-word-component-names': 'off',
+      '@typescript-eslint/no-unused-vars': ['error'],
     },
   }
 );
