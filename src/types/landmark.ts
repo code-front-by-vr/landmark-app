@@ -16,3 +16,10 @@ export type NewLandmarkInput = Omit<
   Landmark,
   'id' | 'createdAt' | 'userRatings' | 'rating' | 'visits'
 >;
+
+export interface LandmarkCardProps {
+  title: string;
+  description: string;
+  rating: number;
+  visits: number;
+}
