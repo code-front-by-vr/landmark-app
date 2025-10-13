@@ -21,6 +21,8 @@ import {
   limit,
   serverTimestamp,
   where,
+  runTransaction,
+  type Transaction,
 } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { firebaseConfig } from '@/config/firebase';
@@ -55,4 +57,6 @@ export {
   limit,
   serverTimestamp,
   where,
+  runTransaction,
+  type Transaction,
 };

@@ -19,7 +19,7 @@ const { title, description, rating, visits } = defineProps<LandmarkCardProps>();
           :key="i"
           :class="[
             'w-4 h-4',
-            i <= Math.round(rating) ? 'fill-yellow-500 text-yellow-500' : 'text-gray-300',
+            i <= Math.ceil(rating) ? 'fill-yellow-500 text-yellow-500' : 'text-gray-300',
           ]"
         />
         <span class="text-sm text-muted-foreground ml-1">{{ rating.toFixed(1) }}</span>

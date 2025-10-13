@@ -12,10 +12,14 @@ export interface Landmark {
   createdAt: ReturnType<typeof serverTimestamp>;
   userRatings: Record<string, number>;
 }
-export type NewLandmarkInput = Omit<
-  Landmark,
-  'id' | 'createdAt' | 'userRatings' | 'rating' | 'visits'
->;
+
+export interface NewLandmarkInput {
+  title: string;
+  description: string;
+  location: { lat: number; lng: number };
+  rating: number;
+  createdBy: string;
+}
 
 export interface LandmarkCardProps {
   title: string;
