@@ -24,7 +24,14 @@ import {
   runTransaction,
   type Transaction,
 } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  listAll,
+  deleteObject,
+} from 'firebase/storage';
 import { firebaseConfig } from '@/config/firebase';
 
 const app = initializeApp(firebaseConfig);
@@ -52,6 +59,8 @@ export {
   ref,
   uploadBytes,
   getDownloadURL,
+  listAll,
+  deleteObject,
   query,
   orderBy,
   limit,

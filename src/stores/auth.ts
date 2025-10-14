@@ -21,8 +21,9 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const registeredUser = await registerUser({ email, password });
       user.value = registeredUser;
+      return registeredUser;
     } catch (error) {
-      console.error('Auth/register error: ', error);
+      console.error('Registration failed:', error);
       throw error;
     }
   }
@@ -31,8 +32,9 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const loggedInUser = await loginUser({ email, password });
       user.value = loggedInUser;
+      return loggedInUser;
     } catch (error) {
-      console.error('Auth/login error: ', error);
+      console.error('Login failed:', error);
       throw error;
     }
   }
@@ -42,7 +44,7 @@ export const useAuthStore = defineStore('auth', () => {
       await logoutUser();
       user.value = null;
     } catch (error) {
-      console.error('Auth/logout error: ', error);
+      console.error('Logout failed:', error);
       throw error;
     }
   }

@@ -2,12 +2,26 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@ui/card';
 import { Star } from 'lucide-vue-next';
 import type { LandmarkCardProps } from '@/types/landmark';
+import { useRouter } from 'vue-router';
 
-const { title, description, rating, visits } = defineProps<LandmarkCardProps>();
+const { title, description, rating, visits, id } = defineProps<
+  LandmarkCardProps & { id: string }
+>();
+
+const router = useRouter();
+
+const handleClick = () => {
+  if (id) {
+    router.push(`/landmark/${id}`);
+  }
+};
 </script>
 
 <template>
-  <Card class="hover:bg-accent/50 transition-colors cursor-pointer border border-border/50">
+  <Card
+    class="hover:bg-accent/50 transition-colors cursor-pointer border border-border/50"
+    @click="handleClick"
+  >
     <CardHeader class="pb-3">
       <CardTitle class="text-lg line-clamp-1">{{ title }}</CardTitle>
       <CardDescription class="line-clamp-2">{{ description }}</CardDescription>

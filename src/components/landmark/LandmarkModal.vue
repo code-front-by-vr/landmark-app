@@ -1,14 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/zod';
 import { landmarkSchema } from '@/schemas/landmark';
-import leaflet, {
-  type LeafletMouseEvent,
-  type LatLngExpression,
-  type Marker,
-  type Map,
-} from 'leaflet';
+import { useLeafletMap } from '@/composables/useLeafletMap';
+import { useFileUpload } from '@/composables/useFileUpload';
+import type { LatLngExpression } from 'leaflet';
 
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@ui/dialog';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@ui/form';
@@ -17,21 +14,27 @@ import { Textarea } from '@ui/textarea';
 import { Button } from '@ui/button';
 import { Label } from '@ui/label';
 import { Upload, MapPin } from 'lucide-vue-next';
-import type { NewLandmarkInput } from '@/types/landmark';
+import type { NewLandmarkInput, Landmark } from '@/types/landmark';
 import { useAuthStore } from '@/stores/auth';
 import { useLandmarkStore } from '@/stores/landmark';
 
-const isLoading = ref(false);
+const props = defineProps<{
+  isEdit?: boolean;
+  landmark?: Landmark;
+}>();
 
-const authStore = useAuthStore();
-const landmarkStore = useLandmarkStore();
 const emit = defineEmits<{
   close: [];
 }>();
 
-let map: Map | null = null;
-let marker: Marker | null = null;
-const uploadedFiles = ref<File[]>([]);
+const isLoading = ref(false);
+const error = ref<string | null>(null);
+
+const authStore = useAuthStore();
+const landmarkStore = useLandmarkStore();
+
+const isEditMode = computed(() => props.isEdit && props.landmark);
+
 const formSchema = toTypedSchema(landmarkSchema);
 
 const form = useForm({
@@ -40,39 +43,54 @@ const form = useForm({
     photos: [],
   },
 });
+const landmarkLocation = computed((): LatLngExpression | null => {
+  if (props.landmark) {
+    return [props.landmark.location.lat, props.landmark.location.lng];
+  }
+  return null;
+});
 
-const handleFiles = (e: Event) => {
-  const target = e.target as HTMLInputElement;
-  const files = Array.from(target.files || []);
-  uploadedFiles.value = files;
-  form.setFieldValue('photos', files);
-};
+const { marker } = useLeafletMap({
+  containerId: 'landmark-map',
+  center: landmarkLocation.value || undefined,
+  enableClick: true,
+  initialMarker: landmarkLocation.value || undefined,
+});
+
+const maxFiles = 5;
+const existingPhotosCount = computed(() => props.landmark?.photos?.length || 0);
+const maxNewFiles = computed(() => Math.max(0, maxFiles - existingPhotosCount.value));
+
+const {
+  files: uploadedFiles,
+  handleFileSelect,
+  clearFiles,
+} = useFileUpload({
+  maxFiles: maxNewFiles.value,
+});
 
 onMounted(() => {
-  map = leaflet.map('landmark-map').setView([53.9006, 27.559], 12);
+  error.value = null;
 
-  leaflet
-    .tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '© OpenStreetMap',
-    })
-    .addTo(map);
+  if (isEditMode.value && props.landmark) {
+    form.setFieldValue('title', props.landmark.title);
+    form.setFieldValue('description', props.landmark.description);
 
-  map.on('click', (e: LeafletMouseEvent) => {
-    if (!map) return;
-
-    if (marker) {
-      map.removeLayer(marker);
+    if (authStore.user && props.landmark.id) {
+      const userRating = landmarkStore.getUserRating(props.landmark.id, authStore.user.uid);
+      if (userRating) {
+        form.setFieldValue('userRating', userRating);
+      }
     }
-    marker = leaflet.marker(e.latlng as LatLngExpression).addTo(map);
-  });
+  }
 });
 
 const onSubmit = form.handleSubmit(async values => {
   isLoading.value = true;
+  error.value = null;
 
   try {
-    if (!marker) {
+    if (!marker.value) {
       throw new Error('Please select a location on the map');
     }
 
@@ -80,23 +98,38 @@ const onSubmit = form.handleSubmit(async values => {
       throw new Error('User not authenticated');
     }
 
-    const newLandmark: NewLandmarkInput = {
+    if (!isEditMode.value && uploadedFiles.value.length === 0) {
+      form.setFieldError('photos', 'Please upload at least one photo');
+      return;
+    }
+
+    const landmarkData: NewLandmarkInput = {
       title: values.title,
       description: values.description,
-      location: { lat: marker.getLatLng().lat, lng: marker.getLatLng().lng },
+      location: {
+        lat: marker.value.getLatLng().lat,
+        lng: marker.value.getLatLng().lng,
+      },
       createdBy: authStore.user.uid,
       rating: values.userRating,
     };
 
-    await landmarkStore.createLandmark(newLandmark, values.photos);
+    if (isEditMode.value && props.landmark?.id) {
+      await landmarkStore.updateLandmark(props.landmark.id, landmarkData, uploadedFiles.value);
+
+      if (values.userRating && props.landmark?.id) {
+        await landmarkStore.rateLandmark(props.landmark.id, authStore.user.uid, values.userRating);
+      }
+    } else {
+      await landmarkStore.createLandmark(landmarkData, uploadedFiles.value);
+    }
 
     form.resetForm();
-    uploadedFiles.value = [];
-    marker = null;
+    clearFiles();
 
     emit('close');
-  } catch (error) {
-    console.error('Add landmark error:', error);
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'An error occurred';
   } finally {
     isLoading.value = false;
   }
@@ -104,13 +137,24 @@ const onSubmit = form.handleSubmit(async values => {
 </script>
 
 <template>
-  <div>
+  <div class="overflow-x-hidden">
     <DialogHeader>
-      <DialogTitle>Add Landmark</DialogTitle>
-      <DialogDescription>Fill all fields and select a location on the map.</DialogDescription>
+      <DialogTitle>{{ isEditMode ? 'Edit Landmark' : 'Add Landmark' }}</DialogTitle>
+      <DialogDescription>{{
+        isEditMode
+          ? 'Update the landmark information below.'
+          : 'Fill all fields and select a location on the map.'
+      }}</DialogDescription>
     </DialogHeader>
 
-    <form @submit.prevent="onSubmit" class="space-y-5 px-4 pb-4">
+    <div
+      v-if="error"
+      class="mx-4 my-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md"
+    >
+      <p class="text-sm text-destructive">{{ error }}</p>
+    </div>
+
+    <form @submit.prevent="onSubmit" class="space-y-5 px-4 py-4 pb-4 overflow-x-hidden">
       <FormField v-slot="{ componentField }" name="title">
         <FormItem>
           <FormLabel>Name</FormLabel>
@@ -171,35 +215,61 @@ const onSubmit = form.handleSubmit(async values => {
         <FormItem>
           <FormLabel>Photos (max 5)</FormLabel>
           <FormControl>
-            <div
-              :class="[
-                'relative border-2 border-dashed rounded-lg p-6 transition-all',
-                'border-border hover:border-primary/50 hover:bg-accent/30',
-                uploadedFiles.length >= 5 ? 'opacity-50 pointer-events-none' : '',
-              ]"
-            >
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                @change="handleFiles"
-                :disabled="isLoading || uploadedFiles.length >= 5"
-                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                id="file-upload"
-              />
+            <div class="space-y-4">
+              <div
+                :class="[
+                  'relative border-2 border-dashed rounded-lg p-4 transition-all',
+                  'border-border hover:border-primary/50 hover:bg-accent/30',
+                  uploadedFiles.length >= maxNewFiles ? 'opacity-50 pointer-events-none' : '',
+                ]"
+              >
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  @change="handleFileSelect"
+                  :disabled="isLoading || uploadedFiles.length >= maxNewFiles"
+                  class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  id="file-upload"
+                />
 
-              <div class="flex flex-col items-center justify-center text-center">
-                <Upload class="w-10 h-10 mb-2 text-muted-foreground" />
-                <p class="text-sm font-medium text-foreground mb-1">
-                  {{
-                    uploadedFiles.length >= 5
-                      ? 'Maximum files reached'
-                      : 'Drop images here or click to upload'
-                  }}
-                </p>
-                <p class="text-xs text-muted-foreground">
-                  {{ uploadedFiles.length }}/5 images uploaded
-                </p>
+                <div class="flex items-center gap-3">
+                  <Upload class="w-6 h-6 text-muted-foreground flex-shrink-0" />
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-foreground truncate">
+                      {{
+                        uploadedFiles.length >= maxNewFiles
+                          ? 'Maximum files reached'
+                          : isEditMode
+                            ? `Add more images (${maxNewFiles} more allowed)`
+                            : 'Drop images here or click to upload'
+                      }}
+                    </p>
+                    <p class="text-xs text-muted-foreground">
+                      {{ uploadedFiles.length }}/{{ maxNewFiles }} new images selected
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                v-if="isEditMode && landmark?.photos && landmark.photos.length > 0"
+                class="space-y-2"
+              >
+                <p class="text-sm font-medium">Existing photos ({{ landmark.photos.length }})</p>
+                <div class="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+                  <div
+                    v-for="(photo, index) in landmark.photos"
+                    :key="index"
+                    class="relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border border-border"
+                  >
+                    <img
+                      :src="photo"
+                      :alt="`Photo ${index + 1}`"
+                      class="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </FormControl>
@@ -208,7 +278,15 @@ const onSubmit = form.handleSubmit(async values => {
       </FormField>
       <DialogFooter class="flex justify-end">
         <Button type="submit" :disabled="isLoading">
-          {{ isLoading ? 'Adding...' : 'Add Landmark' }}
+          {{
+            isLoading
+              ? isEditMode
+                ? 'Updating...'
+                : 'Adding...'
+              : isEditMode
+                ? 'Update Landmark'
+                : 'Add Landmark'
+          }}
         </Button>
       </DialogFooter>
     </form>

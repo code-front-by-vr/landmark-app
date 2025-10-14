@@ -1,36 +1,32 @@
 import { z } from 'zod';
+import { VALIDATION_MESSAGES } from '@/config/constants';
+
+const emailSchema = z
+  .string()
+  .min(1, { message: VALIDATION_MESSAGES.EMAIL_REQUIRED })
+  .email({ message: VALIDATION_MESSAGES.EMAIL_INVALID });
+
+const passwordSchema = z
+  .string()
+  .min(1, { message: VALIDATION_MESSAGES.PASSWORD_REQUIRED })
+  .min(6, { message: VALIDATION_MESSAGES.PASSWORD_MIN_LENGTH });
 
 export const signInSchema = z.object({
-  email: z
-    .string()
-    .min(1, { message: 'Email is required' })
-    .email({ message: 'Enter a valid email' }),
-  password: z
-    .string()
-    .min(1, { message: 'Password is required' })
-    .min(6, { message: 'Minimum 6 characters' }),
+  email: emailSchema,
+  password: passwordSchema,
 });
 
 export const registerSchema = z
   .object({
-    email: z
-      .string()
-      .min(1, { message: 'Email is required' })
-      .email({ message: 'Enter a valid email' }),
-    password: z
-      .string()
-      .min(1, { message: 'Password is required' })
-      .min(6, { message: 'Minimum 6 characters' }),
-    confirmPassword: z.string().min(1, { message: 'Confirm password is required' }),
+    email: emailSchema,
+    password: passwordSchema,
+    confirmPassword: z.string().min(1, { message: VALIDATION_MESSAGES.CONFIRM_PASSWORD_REQUIRED }),
   })
   .refine(data => data.password === data.confirmPassword, {
-    message: 'Passwords do not match',
+    message: VALIDATION_MESSAGES.PASSWORDS_DO_NOT_MATCH,
     path: ['confirmPassword'],
   });
 
 export const forgotPasswordSchema = z.object({
-  email: z
-    .string()
-    .min(1, { message: 'Email is required' })
-    .email({ message: 'Enter a valid email' }),
+  email: emailSchema,
 });

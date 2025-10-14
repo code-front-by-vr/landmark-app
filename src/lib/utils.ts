@@ -1,12 +1,11 @@
 import type { ClassValue } from 'clsx';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { RATING_CONFIG } from '@/config/constants';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
-
-const k = 0.1;
 
 export function calculateRating(userRatings: Record<string, number>) {
   const ratings = Object.values(userRatings || {});
@@ -16,7 +15,7 @@ export function calculateRating(userRatings: Record<string, number>) {
 
   const R = ratings.reduce((a, b) => a + b, 0) / V;
 
-  const S = R * (1 - Math.exp(-k * V));
+  const S = R * (1 - Math.exp(-RATING_CONFIG.DECAY_FACTOR * V));
 
   return {
     rating: Number(S.toFixed(2)),

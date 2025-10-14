@@ -17,11 +17,12 @@ export interface NewLandmarkInput {
   title: string;
   description: string;
   location: { lat: number; lng: number };
-  rating: number;
+  rating?: number;
   createdBy: string;
 }
 
 export interface LandmarkCardProps {
+  id?: string;
   title: string;
   description: string;
   rating: number;

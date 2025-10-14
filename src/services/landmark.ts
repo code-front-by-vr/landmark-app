@@ -17,14 +17,40 @@ import {
   where,
   runTransaction,
   type Transaction,
+  deleteDoc,
+  listAll,
+  deleteObject,
 } from '@/api/firebase';
 import type { Landmark, NewLandmarkInput } from '@/types/landmark';
 import { calculateRating } from '@/lib/utils';
+import { LANDMARK_CONFIG, FILE_UPLOAD_CONFIG } from '@/config/constants';
 
-const LIMIT_COUNT = 10;
 const landmarkCollection = collection(db, 'landmarks');
 
-export async function getLandmarks(limitCount: number = LIMIT_COUNT): Promise<Landmark[]> {
+async function uploadFiles(files: File[], landmarkId: string): Promise<string[]> {
+  const photosUrl: string[] = [];
+
+  for (const file of files.slice(0, FILE_UPLOAD_CONFIG.MAX_FILES)) {
+    try {
+      const photoRef = ref(
+        storage,
+        `${FILE_UPLOAD_CONFIG.STORAGE_PATH}/${landmarkId}/${file.name}`
+      );
+      await uploadBytes(photoRef, file);
+      const photoUrl = await getDownloadURL(photoRef);
+      photosUrl.push(photoUrl);
+    } catch (error) {
+      console.error('Failed to upload file:', error);
+      throw error;
+    }
+  }
+
+  return photosUrl;
+}
+
+export async function getLandmarks(
+  limitCount: number = LANDMARK_CONFIG.DEFAULT_LIMIT
+): Promise<Landmark[]> {
   const q = query(landmarkCollection, orderBy('rating', 'desc'), limit(limitCount));
   const snapshot = await getDocs(q);
 
@@ -32,7 +58,7 @@ export async function getLandmarks(limitCount: number = LIMIT_COUNT): Promise<La
 }
 
 export async function addLandmark(landmark: NewLandmarkInput, files: File[]): Promise<Landmark> {
-  const userRatings = { [landmark.createdBy]: landmark.rating };
+  const userRatings = { [landmark.createdBy]: landmark.rating ?? 0 };
 
   const { rating: calculatedRating, visits } = calculateRating(userRatings);
 
@@ -48,13 +74,7 @@ export async function addLandmark(landmark: NewLandmarkInput, files: File[]): Pr
     createdAt: serverTimestamp(),
   });
 
-  const photosUrl = [];
-  for (const file of files.slice(0, 5)) {
-    const photoRef = ref(storage, `landmarks/${docRef.id}/${file.name}`);
-    await uploadBytes(photoRef, file);
-    const photoUrl = await getDownloadURL(photoRef);
-    photosUrl.push(photoUrl);
-  }
+  const photosUrl = await uploadFiles(files, docRef.id);
 
   await updateDoc(docRef, { photos: photosUrl });
 
@@ -129,4 +149,56 @@ export async function getUserLandmarks(userId: string): Promise<Landmark[]> {
   const snapshot = await getDocs(q);
 
   return snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as Landmark) }));
+}
+
+export async function updateLandmark(
+  landmarkId: string,
+  landmark: NewLandmarkInput,
+  files: File[]
+): Promise<Landmark> {
+  const landmarkRef = doc(db, 'landmarks', landmarkId);
+  const landmarkDoc = await getDoc(landmarkRef);
+
+  if (!landmarkDoc.exists()) {
+    throw new Error('Landmark does not exist!');
+  }
+
+  const existingLandmark = landmarkDoc.data() as Landmark;
+
+  let photosUrl = existingLandmark.photos || [];
+
+  if (files.length > 0) {
+    const newPhotos = await uploadFiles(files, landmarkId);
+    photosUrl = [...photosUrl, ...newPhotos];
+  }
+
+  await updateDoc(landmarkRef, {
+    title: landmark.title,
+    description: landmark.description,
+    location: landmark.location,
+    photos: photosUrl,
+  });
+
+  return {
+    id: landmarkId,
+    ...existingLandmark,
+    title: landmark.title,
+    description: landmark.description,
+    location: landmark.location,
+    photos: photosUrl,
+  };
+}
+
+export async function deleteLandmark(landmarkId: string): Promise<void> {
+  const landmarkRef = doc(db, 'landmarks', landmarkId);
+
+  const photosRef = ref(storage, `${FILE_UPLOAD_CONFIG.STORAGE_PATH}/${landmarkId}`);
+  try {
+    const photosList = await listAll(photosRef);
+    await Promise.all(photosList.items.map(item => deleteObject(item)));
+  } catch (error) {
+    console.warn('Failed to delete some photos:', error);
+  }
+
+  await deleteDoc(landmarkRef);
 }

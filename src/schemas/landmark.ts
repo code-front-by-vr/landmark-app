@@ -1,14 +1,16 @@
 import { z } from 'zod';
+import { VALIDATION_MESSAGES, RATING_CONFIG, FILE_UPLOAD_CONFIG } from '@/config/constants';
 
 export const landmarkSchema = z.object({
-  title: z.string().min(1, { message: 'Title is required' }),
-  description: z.string().min(1, { message: 'Description is required' }),
+  title: z.string().min(1, { message: VALIDATION_MESSAGES.TITLE_REQUIRED }),
+  description: z.string().min(1, { message: VALIDATION_MESSAGES.DESCRIPTION_REQUIRED }),
   userRating: z.coerce
     .number()
-    .min(1, { message: 'Rating is required' })
-    .max(5, { message: 'Rating must be between 1 and 5' }),
+    .min(RATING_CONFIG.MIN, { message: VALIDATION_MESSAGES.RATING_REQUIRED })
+    .max(RATING_CONFIG.MAX, { message: VALIDATION_MESSAGES.RATING_RANGE }),
   photos: z
     .array(z.instanceof(File))
-    .min(1, { message: 'Please upload at least one photo' })
-    .max(5, { message: 'Maximum 5 photos allowed' }),
+    .max(FILE_UPLOAD_CONFIG.MAX_FILES, { message: VALIDATION_MESSAGES.PHOTOS_MAX })
+    .optional()
+    .default([]),
 });

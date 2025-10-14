@@ -1,21 +1,28 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
-import leaflet from 'leaflet';
+import { useRouter } from 'vue-router';
+import leaflet, { type Marker } from 'leaflet';
 import { Button } from '@ui/button';
 import { Dialog, DialogContent, DialogTrigger } from '@ui/dialog';
 import LandmarkModal from '@/components/landmark/LandmarkModal.vue';
 import { Plus, MapPinned } from 'lucide-vue-next';
-import type { Map, Marker } from 'leaflet';
 import LandmarkCard from '@/components/landmark/LandmarkCard.vue';
 import { useLandmarkStore } from '@/stores/landmark';
+import { useLeafletMap } from '@/composables/useLeafletMap';
+import { MAP_CONFIG } from '@/config/constants';
 
-let map: Map | null = null;
+const router = useRouter();
 const isDialogOpen = ref(false);
 const landmarkStore = useLandmarkStore();
 const markers = ref<Marker[]>([]);
 
+const { map } = useLeafletMap({
+  containerId: 'map',
+  center: [...MAP_CONFIG.DEFAULT_CENTER],
+});
+
 const updateMapMarkers = () => {
-  if (!map) return;
+  if (!map.value) return;
 
   markers.value.forEach(marker => marker.remove());
   markers.value = [];
@@ -23,22 +30,18 @@ const updateMapMarkers = () => {
   landmarkStore.landmarks.forEach(landmark => {
     const marker = leaflet
       .marker([landmark.location.lat, landmark.location.lng])
-      .addTo(map!)
+      .addTo(map.value!)
       .bindPopup(landmark.title);
+
+    marker.on('click', () => {
+      router.push(`/landmark/${landmark.id}`);
+    });
+
     markers.value.push(marker);
   });
 };
 
 onMounted(async () => {
-  map = leaflet.map('map').setView([53.9006, 27.559], 12);
-
-  leaflet
-    .tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '© OpenStreetMap',
-    })
-    .addTo(map);
-
   await landmarkStore.fetchLandmarks();
   updateMapMarkers();
 });
@@ -82,6 +85,7 @@ watch(() => landmarkStore.landmarks, updateMapMarkers, { deep: true });
         <LandmarkCard
           v-for="landmark in landmarkStore.landmarks"
           :key="landmark.id"
+          :id="landmark.id || ''"
           :title="landmark.title"
           :description="landmark.description"
           :rating="landmark.rating"

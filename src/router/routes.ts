@@ -10,6 +10,12 @@ export const ROUTES = [
     component: () => import('@/views/GeneralMap.vue'),
     meta: { requiresAuth: true },
   },
+  {
+    path: '/landmark/:id',
+    name: 'landmark-detail',
+    component: () => import('@/views/LandmarkDetail.vue'),
+    meta: { requiresAuth: true },
+  },
 
   {
     path: '/sign-in',
