@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { Plus, MapPinned } from 'lucide-vue-next';
 import leaflet, { type Marker } from 'leaflet';
 import { Button } from '@ui/button';
 import { Dialog, DialogTrigger } from '@ui/dialog';
 import DialogScrollContent from '@ui/dialog/DialogScrollContent.vue';
 import LandmarkModal from '@/components/landmark/LandmarkModal.vue';
-import { Plus, MapPinned } from 'lucide-vue-next';
 import LandmarkCard from '@/components/landmark/LandmarkCard.vue';
 import { useLandmarkStore } from '@/stores/landmark';
 import { useAuthStore } from '@/stores/auth';
@@ -16,9 +16,10 @@ import { MAP_CONFIG } from '@/config/constants';
 const router = useRouter();
 const isDialogOpen = ref(false);
 const showOnlyMyLandmarks = ref(false);
+const markers = ref<Marker[]>([]);
+
 const landmarkStore = useLandmarkStore();
 const authStore = useAuthStore();
-const markers = ref<Marker[]>([]);
 
 const { map } = useLeafletMap({
   containerId: 'map',

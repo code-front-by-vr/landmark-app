@@ -56,6 +56,21 @@ export async function getLandmarksService(
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Landmark);
 }
 
+export async function getUserLandmarksService(
+  userId: string,
+  limitCount: number = LANDMARK_CONFIG.DEFAULT_LIMIT
+): Promise<Landmark[]> {
+  const q = query(
+    landmarkCollection,
+    where('createdBy', '==', userId),
+    orderBy('rating', 'desc'),
+    limit(limitCount)
+  );
+  const snapshot = await getDocs(q);
+
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Landmark);
+}
+
 export async function addLandmarkService(
   landmark: NewLandmarkInput,
   files: File[]
@@ -125,13 +140,6 @@ export async function rateLandmarkService(
   }
 
   return updatedLandmark;
-}
-
-export async function getUserLandmarksService(userId: string): Promise<Landmark[]> {
-  const q = query(landmarkCollection, where('createdBy', '==', userId));
-  const snapshot = await getDocs(q);
-
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Landmark);
 }
 
 export async function updateLandmarkService(
