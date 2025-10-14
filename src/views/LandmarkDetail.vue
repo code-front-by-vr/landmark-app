@@ -52,7 +52,7 @@ const handleDelete = async () => {
   // TODO: Replace with confirmation component from SHADCN
   if (confirm('Are you sure you want to delete this landmark?')) {
     try {
-      await landmarkStore.deleteLandmark(landmark.value.id!);
+      await landmarkStore.deleteLandmark(landmark.value.id);
       router.push('/map');
     } catch (error) {
       console.error('Failed to delete landmark:', error);

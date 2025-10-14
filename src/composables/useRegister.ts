@@ -3,7 +3,7 @@ import { useRouter } from 'vue-router';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/zod';
 import { registerSchema } from '@/schemas/auth';
-import { registerUser } from '@/services/auth';
+import { registerUserService } from '@/services/auth';
 
 export function useRegister() {
   const router = useRouter();
@@ -22,7 +22,7 @@ export function useRegister() {
     isLoading.value = true;
 
     try {
-      await registerUser({ email, password });
+      await registerUserService({ email, password });
       resetForm();
       router.push('/');
     } catch (error) {

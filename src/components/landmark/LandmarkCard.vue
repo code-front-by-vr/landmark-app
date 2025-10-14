@@ -6,26 +6,18 @@ import { useRouter } from 'vue-router';
 const MAX_RATING_STARS = 5;
 
 export interface LandmarkCardProps {
-  id?: string;
+  id: string;
   title: string;
   description: string;
   rating: number;
   visits: number;
 }
 
-const { title, description, rating, visits, id } = withDefaults(
-  defineProps<LandmarkCardProps & { id: string }>(),
-  {
-    rating: 0,
-  }
-);
-
+const { title, description, rating = 0, visits, id } = defineProps<LandmarkCardProps>();
 const router = useRouter();
 
 const handleClick = () => {
-  if (id) {
-    router.push(`/landmark/${id}`);
-  }
+  router.push(`/landmark/${id}`);
 };
 </script>
 

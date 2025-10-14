@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import type { Landmark, NewLandmarkInput } from '@/types/landmark';
 import {
   getLandmarksService,
@@ -13,32 +13,32 @@ import { calculateRatingStats } from '@/lib/utils';
 export const useLandmarkStore = defineStore('landmark', () => {
   const landmarks = ref<Landmark[]>([]);
 
-  const getLandmarkById = computed(() => (id: string) => {
+  function getLandmarkById(id: string) {
     return landmarks.value.find(l => l.id === id);
-  });
+  }
 
-  const isOwner = computed(() => (landmarkId: string, userId: string) => {
-    const landmark = getLandmarkById.value(landmarkId);
+  function isOwner(landmarkId: string, userId: string) {
+    const landmark = getLandmarkById(landmarkId);
     return landmark?.createdBy === userId;
-  });
+  }
 
-  const getUserRating = computed(() => (landmarkId: string, userId: string) => {
-    const landmark = getLandmarkById.value(landmarkId);
+  function getUserRating(landmarkId: string, userId: string) {
+    const landmark = getLandmarkById(landmarkId);
     if (!landmark || !landmark.userRatings) return null;
 
     return landmark.userRatings[userId] || null;
-  });
+  }
 
-  const getOverallRating = computed(() => (landmarkId: string) => {
-    const landmark = getLandmarkById.value(landmarkId);
+  function getOverallRating(landmarkId: string) {
+    const landmark = getLandmarkById(landmarkId);
     if (!landmark) return 0;
 
     const { rating } = calculateRatingStats(landmark.userRatings || {});
     return rating;
-  });
+  }
 
   function addLandmarkToStore(newLandmark: Landmark) {
-    landmarks.value = [...landmarks.value, newLandmark];
+    landmarks.value.push(newLandmark);
   }
 
   async function fetchLandmarks() {

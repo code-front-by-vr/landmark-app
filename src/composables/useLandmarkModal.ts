@@ -66,7 +66,7 @@ export function useLandmarkModal(props: UseLandmarkModalProps, emit: (event: 'cl
       form.setFieldValue('title', props.landmark.title);
       form.setFieldValue('description', props.landmark.description);
 
-      if (authStore.user && props.landmark.id) {
+      if (authStore.user) {
         const userRating = landmarkStore.getUserRating(props.landmark.id, authStore.user.uid);
         if (userRating) {
           form.setFieldValue('userRating', userRating);
@@ -104,10 +104,10 @@ export function useLandmarkModal(props: UseLandmarkModalProps, emit: (event: 'cl
         rating: values.userRating,
       };
 
-      if (isEditMode.value && props.landmark?.id) {
+      if (isEditMode.value && props.landmark) {
         await landmarkStore.updateLandmark(props.landmark.id, landmarkData, uploadedFiles.value);
 
-        if (values.userRating && props.landmark?.id) {
+        if (values.userRating) {
           await landmarkStore.rateLandmark(
             props.landmark.id,
             authStore.user.uid,

@@ -1,16 +1,29 @@
-export interface Landmark {
-  id?: string;
+export interface Location {
+  readonly lat: number;
+  readonly lng: number;
+}
+
+export interface UserRatings {
+  readonly [userId: string]: number;
+}
+
+export interface LandmarkBase {
   title: string;
   description: string;
-  location: { lat: number; lng: number };
-  photos?: string[];
+  location: Location;
+  photos?: readonly string[];
   rating: number;
   visits: number;
   createdBy: string;
-  userRatings: Record<string, number>;
+  userRatings: UserRatings;
+}
+export interface Landmark extends LandmarkBase {
+  readonly id: string;
 }
 
 export type NewLandmarkInput = Pick<
-  Landmark,
-  'title' | 'description' | 'location' | 'rating' | 'createdBy'
->;
+  LandmarkBase,
+  'title' | 'description' | 'location' | 'createdBy'
+> & {
+  rating?: number;
+};

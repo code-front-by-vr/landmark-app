@@ -12,6 +12,8 @@ const app = createApp(App);
 app.use(createPinia());
 app.use(router);
 
+app.mount('#app');
+
 const store = useAuthStore();
 
 onAuthStateChanged(auth, user => {
@@ -21,5 +23,3 @@ onAuthStateChanged(auth, user => {
     store.clearUser();
   }
 });
-
-app.mount('#app');

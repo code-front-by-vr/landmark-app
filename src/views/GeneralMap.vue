@@ -86,7 +86,7 @@ watch(() => landmarkStore.landmarks, updateMapMarkers, { deep: true });
         <LandmarkCard
           v-for="landmark in landmarkStore.landmarks"
           :key="landmark.id"
-          :id="landmark.id || ''"
+          :id="landmark.id"
           :title="landmark.title"
           :description="landmark.description"
           :rating="landmark.rating"

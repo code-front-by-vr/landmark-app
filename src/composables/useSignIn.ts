@@ -3,7 +3,7 @@ import { useRouter } from 'vue-router';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/zod';
 import { signInSchema } from '@/schemas/auth';
-import { loginUser } from '@/services/auth';
+import { loginUserService } from '@/services/auth';
 
 export function useSignIn() {
   const router = useRouter();
@@ -21,7 +21,7 @@ export function useSignIn() {
     isLoading.value = true;
 
     try {
-      await loginUser({ email, password });
+      await loginUserService({ email, password });
 
       resetForm();
       router.push('/map');

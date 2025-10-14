@@ -53,7 +53,7 @@ export async function getLandmarksService(
   const q = query(landmarkCollection, orderBy('rating', 'desc'), limit(limitCount));
   const snapshot = await getDocs(q);
 
-  return snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as Landmark) }));
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Landmark);
 }
 
 export async function addLandmarkService(
@@ -81,14 +81,18 @@ export async function addLandmarkService(
   await updateDoc(docRef, { photos: photosUrl });
 
   const docSnap = await getDoc(docRef);
-  return { id: docSnap.id, ...(docSnap.data() as Landmark) };
+  return { id: docSnap.id, ...docSnap.data() } as Landmark;
 }
 
 export async function getLandmarkByIdService(id: string): Promise<Landmark> {
   const docRef = doc(db, 'landmarks', id);
   const docSnap = await getDoc(docRef);
 
-  return { id: docSnap.id, ...(docSnap.data() as Landmark) };
+  if (!docSnap.exists()) {
+    throw new Error(`Landmark with id ${id} not found`);
+  }
+
+  return { id: docSnap.id, ...docSnap.data() } as Landmark;
 }
 
 export async function rateLandmarkService(
@@ -104,13 +108,11 @@ export async function rateLandmarkService(
     const landmarkDoc = await transaction.get(landmarkRef);
 
     if (!landmarkDoc.exists()) {
-      throw new Error('Landmark does not exist!');
+      throw new Error(`Landmark with id ${landmarkId} not found`);
     }
 
     const landmark = landmarkDoc.data() as Landmark;
-    const userRatings = landmark.userRatings || {};
-
-    userRatings[userId] = rating;
+    const userRatings = { ...(landmark.userRatings || {}), [userId]: rating };
 
     const { rating: newRating, visits } = calculateRatingStats(userRatings);
 
@@ -121,8 +123,8 @@ export async function rateLandmarkService(
     });
 
     updatedLandmark = {
-      id: landmarkDoc.id,
       ...landmark,
+      id: landmarkDoc.id,
       userRatings,
       rating: newRating,
       visits,
@@ -140,7 +142,7 @@ export async function getUserLandmarksService(userId: string): Promise<Landmark[
   const q = query(landmarkCollection, where('createdBy', '==', userId));
   const snapshot = await getDocs(q);
 
-  return snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as Landmark) }));
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Landmark);
 }
 
 export async function updateLandmarkService(
@@ -152,12 +154,12 @@ export async function updateLandmarkService(
   const landmarkDoc = await getDoc(landmarkRef);
 
   if (!landmarkDoc.exists()) {
-    throw new Error('Landmark does not exist!');
+    throw new Error(`Landmark with id ${landmarkId} not found`);
   }
 
   const existingLandmark = landmarkDoc.data() as Landmark;
 
-  let photosUrl = existingLandmark.photos || [];
+  let photosUrl = [...(existingLandmark.photos || [])];
 
   if (files.length > 0) {
     const newPhotos = await uploadFiles(files, landmarkId);
@@ -172,8 +174,8 @@ export async function updateLandmarkService(
   });
 
   return {
-    id: landmarkId,
     ...existingLandmark,
+    id: landmarkId,
     title: landmark.title,
     description: landmark.description,
     location: landmark.location,
