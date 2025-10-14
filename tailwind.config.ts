@@ -21,8 +21,6 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-        inter: ['Inter', 'sans-serif'],
-        roboto: ['Roboto', 'sans-serif'],
       },
     },
   },

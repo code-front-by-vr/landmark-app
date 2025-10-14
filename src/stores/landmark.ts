@@ -1,70 +1,81 @@
 import { defineStore } from 'pinia';
+import { ref, computed } from 'vue';
 import type { Landmark, NewLandmarkInput } from '@/types/landmark';
 import {
-  getLandmarks,
-  addLandmark,
-  rateLandmark,
-  deleteLandmark,
-  updateLandmark,
+  getLandmarksService,
+  addLandmarkService,
+  rateLandmarkService,
+  deleteLandmarkService,
+  updateLandmarkService,
 } from '@/services/landmark';
-import { calculateRating } from '@/lib/utils';
+import { calculateRatingStats } from '@/lib/utils';
 
-export const useLandmarkStore = defineStore('landmark', {
-  state: () => ({
-    landmarks: [] as Landmark[],
-  }),
-  getters: {
-    getLandmarkById: state => (id: string) => {
-      return state.landmarks.find(l => l.id === id);
-    },
-    isOwner() {
-      return (landmarkId: string, userId: string) => {
-        const landmark = this.getLandmarkById(landmarkId);
+export const useLandmarkStore = defineStore('landmark', () => {
+  const landmarks = ref<Landmark[]>([]);
 
-        return landmark?.createdBy === userId;
-      };
-    },
-    getUserRating() {
-      return (landmarkId: string, userId: string) => {
-        const landmark = this.getLandmarkById(landmarkId);
-        if (!landmark || !landmark.userRatings) return null;
+  const getLandmarkById = computed(() => (id: string) => {
+    return landmarks.value.find(l => l.id === id);
+  });
 
-        return landmark.userRatings[userId] || null;
-      };
-    },
-    getOverallRating() {
-      return (landmarkId: string) => {
-        const landmark = this.getLandmarkById(landmarkId);
-        if (!landmark) return 0;
+  const isOwner = computed(() => (landmarkId: string, userId: string) => {
+    const landmark = getLandmarkById.value(landmarkId);
+    return landmark?.createdBy === userId;
+  });
 
-        const { rating } = calculateRating(landmark.userRatings || {});
+  const getUserRating = computed(() => (landmarkId: string, userId: string) => {
+    const landmark = getLandmarkById.value(landmarkId);
+    if (!landmark || !landmark.userRatings) return null;
 
-        return rating;
-      };
-    },
-  },
-  actions: {
-    addLandmarkToStore(newLandmark: Landmark) {
-      this.landmarks = [...this.landmarks, newLandmark];
-    },
-    async fetchLandmarks() {
-      this.landmarks = await getLandmarks();
-    },
-    async createLandmark(landmark: NewLandmarkInput, files: File[]) {
-      const createdLandmark = await addLandmark(landmark, files);
-      this.addLandmarkToStore(createdLandmark);
-    },
-    async updateLandmark(landmarkId: string, landmark: NewLandmarkInput, files: File[]) {
-      const updatedLandmark = await updateLandmark(landmarkId, landmark, files);
-      this.landmarks = this.landmarks.map(l => (l.id === landmarkId ? updatedLandmark : l));
-    },
-    async rateLandmark(landmarkId: string, userId: string, rating: number) {
-      const updatedLandmark = await rateLandmark(landmarkId, userId, rating);
-      this.landmarks = this.landmarks.map(l => (l.id === landmarkId ? updatedLandmark : l));
-    },
-    async deleteLandmark(landmarkId: string) {
-      await deleteLandmark(landmarkId);
-      this.landmarks = this.landmarks.filter(l => l.id !== landmarkId);
-    },
-  },
+    return landmark.userRatings[userId] || null;
+  });
+
+  const getOverallRating = computed(() => (landmarkId: string) => {
+    const landmark = getLandmarkById.value(landmarkId);
+    if (!landmark) return 0;
+
+    const { rating } = calculateRatingStats(landmark.userRatings || {});
+    return rating;
+  });
+
+  function addLandmarkToStore(newLandmark: Landmark) {
+    landmarks.value = [...landmarks.value, newLandmark];
+  }
+
+  async function fetchLandmarks() {
+    landmarks.value = await getLandmarksService();
+  }
+
+  async function createLandmark(landmark: NewLandmarkInput, files: File[]) {
+    const createdLandmark = await addLandmarkService(landmark, files);
+    addLandmarkToStore(createdLandmark);
+  }
+
+  async function updateLandmark(landmarkId: string, landmark: NewLandmarkInput, files: File[]) {
+    const updatedLandmark = await updateLandmarkService(landmarkId, landmark, files);
+    landmarks.value = landmarks.value.map(l => (l.id === landmarkId ? updatedLandmark : l));
+  }
+
+  async function rateLandmark(landmarkId: string, userId: string, rating: number) {
+    const updatedLandmark = await rateLandmarkService(landmarkId, userId, rating);
+    landmarks.value = landmarks.value.map(l => (l.id === landmarkId ? updatedLandmark : l));
+  }
+
+  async function deleteLandmark(landmarkId: string) {
+    await deleteLandmarkService(landmarkId);
+    landmarks.value = landmarks.value.filter(l => l.id !== landmarkId);
+  }
+
+  return {
+    landmarks,
+    getLandmarkById,
+    isOwner,
+    getUserRating,
+    getOverallRating,
+    addLandmarkToStore,
+    fetchLandmarks,
+    createLandmark,
+    updateLandmark,
+    rateLandmark,
+    deleteLandmark,
+  };
 });

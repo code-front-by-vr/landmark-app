@@ -1,9 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue';
 import { RouterLink } from 'vue-router';
-import { useForm } from 'vee-validate';
-import { toTypedSchema } from '@vee-validate/zod';
-import { forgotPasswordSchema } from '@/schemas/auth';
+import { useForgotPassword } from '@/composables/useForgotPassword';
 
 import { Mail } from 'lucide-vue-next';
 import { Card, CardHeader, CardTitle, CardContent } from '@ui/card';
@@ -11,27 +8,9 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@ui/fo
 import { Input } from '@ui/input';
 import { Button } from '@ui/button';
 import { Spinner } from '@ui/spinner';
+import { SuccessMessage } from '@/components/shared/ui/success-message';
 
-const formSchema = toTypedSchema(forgotPasswordSchema);
-
-const form = useForm({
-  validationSchema: formSchema,
-});
-
-const isLoading = ref(false);
-const isSuccess = ref(false);
-
-const onSubmit = form.handleSubmit(async () => {
-  isLoading.value = true;
-  try {
-    // TODO: add password reset to firebase
-    isSuccess.value = true;
-  } catch (error) {
-    console.error('Password reset error:', error);
-  } finally {
-    isLoading.value = false;
-  }
-});
+const { isLoading, isSuccess, onSubmit } = useForgotPassword();
 </script>
 
 <template>
@@ -42,17 +21,10 @@ const onSubmit = form.handleSubmit(async () => {
           <CardTitle class="text-2xl font-semibold text-gray-900">Forgot Password</CardTitle>
         </CardHeader>
         <CardContent>
-          <div v-if="isSuccess" class="space-y-4">
-            <div class="text-center space-y-2">
-              <div
-                class="mx-auto w-12 h-12 flex items-center justify-center rounded-full bg-green-100"
-              >
-                <Mail class="w-6 h-6 text-green-600" />
-              </div>
-              <p class="text-sm text-gray-600">
-                Password reset instructions have been sent to your email address.
-              </p>
-            </div>
+          <SuccessMessage
+            v-if="isSuccess"
+            message="Password reset instructions have been sent to your email address."
+          >
             <Button type="button" size="lg" class="w-full font-medium" @click="isSuccess = false">
               Send Again
             </Button>
@@ -61,7 +33,7 @@ const onSubmit = form.handleSubmit(async () => {
                 Back to Sign In
               </RouterLink>
             </div>
-          </div>
+          </SuccessMessage>
 
           <div v-else>
             <p class="text-sm text-gray-600 text-center mb-5">

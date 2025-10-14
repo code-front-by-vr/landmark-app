@@ -6,23 +6,23 @@ import {
   onAuthStateChanged,
   type User,
 } from '@/api/firebase';
-import type { LoginFormValues } from '@/types';
+import type { SignInFormData } from '@/schemas/auth';
 
-export async function registerUser({ email, password }: LoginFormValues): Promise<User> {
+export async function registerUserService({ email, password }: SignInFormData): Promise<User> {
   const userCredential = await createUserWithEmailAndPassword(auth, email, password);
   return userCredential.user;
 }
 
-export async function loginUser({ email, password }: LoginFormValues): Promise<User> {
+export async function loginUserService({ email, password }: SignInFormData): Promise<User> {
   const userCredential = await signInWithEmailAndPassword(auth, email, password);
   return userCredential.user;
 }
 
-export async function logoutUser(): Promise<void> {
+export async function logoutUserService(): Promise<void> {
   await signOut(auth);
 }
 
-export const getCurrentUser = (): Promise<User | null> => {
+export const getCurrentUserService = (): Promise<User | null> => {
   return new Promise(resolve => {
     const removeListener = onAuthStateChanged(auth, user => {
       removeListener();

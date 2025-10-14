@@ -9,6 +9,7 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
   const { maxFiles = FILE_UPLOAD_CONFIG.MAX_FILES } = options;
 
   const files = ref<File[]>([]);
+  const fileInputRef = ref<HTMLInputElement | null>(null);
   const fileCount = computed(() => files.value.length);
   const canAddMore = computed(() => fileCount.value < maxFiles);
 
@@ -38,10 +39,14 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
 
   function clearFiles() {
     files.value = [];
+    if (fileInputRef.value) {
+      fileInputRef.value.value = '';
+    }
   }
 
   return {
     files,
+    fileInputRef,
     fileCount,
     canAddMore,
     handleFileSelect,

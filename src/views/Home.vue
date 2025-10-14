@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router';
+import { RouterLink } from 'vue-router';
 import { MapPin } from 'lucide-vue-next';
 import { Button } from '@ui/button';
 import { useAuthStore } from '@/stores/auth';
 
-const router = useRouter();
 const authStore = useAuthStore();
 </script>
 
 <template>
-  <div class="flex flex-col flex-1 justify-center items-center">
+  <div class="flex flex-col justify-center items-center min-h-full">
     <section class="flex flex-col items-center text-center py-16 md:py-24 px-4">
       <div class="flex items-center gap-3 mb-6">
         <MapPin class="size-12 md:size-16 text-primary" />
@@ -28,15 +27,16 @@ const authStore = useAuthStore();
       <div class="flex flex-col sm:flex-row gap-4">
         <Button
           v-if="authStore.isAuthenticated"
+          as="a"
+          :as-child="true"
           size="lg"
-          @click="router.push('/map')"
           class="text-base px-8"
         >
-          Get Started
+          <RouterLink to="/map">Get Started</RouterLink>
         </Button>
-        <Button v-else size="lg" @click="router.push('/sign-in')" class="text-base px-8">
-          Sign In to Get Started</Button
-        >
+        <Button v-else as="a" :as-child="true" size="lg" class="text-base px-8">
+          <RouterLink to="/sign-in">Sign In to Get Started</RouterLink>
+        </Button>
       </div>
     </section>
   </div>

@@ -3,7 +3,8 @@ import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import leaflet, { type Marker } from 'leaflet';
 import { Button } from '@ui/button';
-import { Dialog, DialogContent, DialogTrigger } from '@ui/dialog';
+import { Dialog, DialogTrigger } from '@ui/dialog';
+import DialogScrollContent from '@ui/dialog/DialogScrollContent.vue';
 import LandmarkModal from '@/components/landmark/LandmarkModal.vue';
 import { Plus, MapPinned } from 'lucide-vue-next';
 import LandmarkCard from '@/components/landmark/LandmarkCard.vue';
@@ -50,7 +51,7 @@ watch(() => landmarkStore.landmarks, updateMapMarkers, { deep: true });
 </script>
 
 <template>
-  <div class="flex flex-col lg:flex-row h-[calc(100vh-4rem)]">
+  <div class="flex flex-col lg:flex-row h-[calc(100vh-3rem)]">
     <div class="relative w-full lg:w-2/3 h-1/2 lg:h-full">
       <div id="map" class="w-full h-full relative z-0"></div>
 
@@ -62,9 +63,9 @@ watch(() => landmarkStore.landmarks, updateMapMarkers, { deep: true });
               Add Landmark
             </Button>
           </DialogTrigger>
-          <DialogContent class="z-[100] w-full max-w-2xl overflow-y-auto">
+          <DialogScrollContent class="z-[100] w-full max-w-2xl">
             <LandmarkModal @close="isDialogOpen = false" />
-          </DialogContent>
+          </DialogScrollContent>
         </Dialog>
       </div>
     </div>

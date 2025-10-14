@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { ROUTES } from './routes';
-import { getCurrentUser } from '@/services/auth';
+import { getCurrentUserService } from '@/services/auth';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -14,7 +14,7 @@ router.beforeEach(async (to, from, next) => {
     return next();
   }
 
-  const user = await getCurrentUser();
+  const user = await getCurrentUserService();
 
   if (user) {
     next();

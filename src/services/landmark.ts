@@ -11,7 +11,6 @@ import {
   doc,
   getDocs,
   addDoc,
-  serverTimestamp,
   updateDoc,
   getDoc,
   where,
@@ -22,7 +21,7 @@ import {
   deleteObject,
 } from '@/api/firebase';
 import type { Landmark, NewLandmarkInput } from '@/types/landmark';
-import { calculateRating } from '@/lib/utils';
+import { calculateRatingStats } from '@/lib/utils';
 import { LANDMARK_CONFIG, FILE_UPLOAD_CONFIG } from '@/config/constants';
 
 const landmarkCollection = collection(db, 'landmarks');
@@ -48,7 +47,7 @@ async function uploadFiles(files: File[], landmarkId: string): Promise<string[]>
   return photosUrl;
 }
 
-export async function getLandmarks(
+export async function getLandmarksService(
   limitCount: number = LANDMARK_CONFIG.DEFAULT_LIMIT
 ): Promise<Landmark[]> {
   const q = query(landmarkCollection, orderBy('rating', 'desc'), limit(limitCount));
@@ -57,10 +56,14 @@ export async function getLandmarks(
   return snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as Landmark) }));
 }
 
-export async function addLandmark(landmark: NewLandmarkInput, files: File[]): Promise<Landmark> {
+export async function addLandmarkService(
+  landmark: NewLandmarkInput,
+  files: File[]
+): Promise<Landmark> {
+  // Each landmark stores its own userRatings object
   const userRatings = { [landmark.createdBy]: landmark.rating ?? 0 };
 
-  const { rating: calculatedRating, visits } = calculateRating(userRatings);
+  const { rating: calculatedRating, visits } = calculateRatingStats(userRatings);
 
   const docRef = await addDoc(landmarkCollection, {
     title: landmark.title,
@@ -71,35 +74,24 @@ export async function addLandmark(landmark: NewLandmarkInput, files: File[]): Pr
     rating: calculatedRating,
     visits,
     userRatings,
-    createdAt: serverTimestamp(),
   });
 
   const photosUrl = await uploadFiles(files, docRef.id);
 
   await updateDoc(docRef, { photos: photosUrl });
 
-  return {
-    id: docRef.id,
-    title: landmark.title,
-    description: landmark.description,
-    location: landmark.location,
-    createdBy: landmark.createdBy,
-    photos: photosUrl,
-    rating: calculatedRating,
-    visits,
-    userRatings,
-    createdAt: serverTimestamp() as ReturnType<typeof serverTimestamp>,
-  };
+  const docSnap = await getDoc(docRef);
+  return { id: docSnap.id, ...(docSnap.data() as Landmark) };
 }
 
-export async function getLandmarkById(id: string): Promise<Landmark> {
+export async function getLandmarkByIdService(id: string): Promise<Landmark> {
   const docRef = doc(db, 'landmarks', id);
   const docSnap = await getDoc(docRef);
 
   return { id: docSnap.id, ...(docSnap.data() as Landmark) };
 }
 
-export async function rateLandmark(
+export async function rateLandmarkService(
   landmarkId: string,
   userId: string,
   rating: number
@@ -120,7 +112,7 @@ export async function rateLandmark(
 
     userRatings[userId] = rating;
 
-    const { rating: newRating, visits } = calculateRating(userRatings);
+    const { rating: newRating, visits } = calculateRatingStats(userRatings);
 
     transaction.update(landmarkRef, {
       userRatings,
@@ -144,14 +136,14 @@ export async function rateLandmark(
   return updatedLandmark;
 }
 
-export async function getUserLandmarks(userId: string): Promise<Landmark[]> {
+export async function getUserLandmarksService(userId: string): Promise<Landmark[]> {
   const q = query(landmarkCollection, where('createdBy', '==', userId));
   const snapshot = await getDocs(q);
 
   return snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as Landmark) }));
 }
 
-export async function updateLandmark(
+export async function updateLandmarkService(
   landmarkId: string,
   landmark: NewLandmarkInput,
   files: File[]
@@ -189,7 +181,7 @@ export async function updateLandmark(
   };
 }
 
-export async function deleteLandmark(landmarkId: string): Promise<void> {
+export async function deleteLandmarkService(landmarkId: string): Promise<void> {
   const landmarkRef = doc(db, 'landmarks', landmarkId);
 
   const photosRef = ref(storage, `${FILE_UPLOAD_CONFIG.STORAGE_PATH}/${landmarkId}`);

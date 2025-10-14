@@ -1,8 +1,8 @@
-import type { LoginFormValues } from '@/types';
+import type { SignInFormData } from '@/schemas/auth';
 import { type User } from '@/api/firebase';
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
-import { loginUser, logoutUser, registerUser } from '@/services/auth';
+import { loginUserService, logoutUserService, registerUserService } from '@/services/auth';
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null);
@@ -17,9 +17,9 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null;
   }
 
-  async function register({ email, password }: LoginFormValues) {
+  async function register({ email, password }: SignInFormData) {
     try {
-      const registeredUser = await registerUser({ email, password });
+      const registeredUser = await registerUserService({ email, password });
       user.value = registeredUser;
       return registeredUser;
     } catch (error) {
@@ -28,9 +28,9 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function login({ email, password }: LoginFormValues) {
+  async function login({ email, password }: SignInFormData) {
     try {
-      const loggedInUser = await loginUser({ email, password });
+      const loggedInUser = await loginUserService({ email, password });
       user.value = loggedInUser;
       return loggedInUser;
     } catch (error) {
@@ -41,7 +41,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function logout() {
     try {
-      await logoutUser();
+      await logoutUserService();
       user.value = null;
     } catch (error) {
       console.error('Logout failed:', error);

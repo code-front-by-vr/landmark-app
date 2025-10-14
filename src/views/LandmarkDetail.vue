@@ -7,7 +7,8 @@ import { useLeafletMap } from '@/composables/useLeafletMap';
 import { Button } from '@ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ui/card';
 import { MapPinned, Star, Eye, ArrowLeft, Edit, Trash2 } from 'lucide-vue-next';
-import { Dialog, DialogContent, DialogTrigger } from '@ui/dialog';
+import { Dialog, DialogTrigger } from '@ui/dialog';
+import DialogScrollContent from '@ui/dialog/DialogScrollContent.vue';
 import LandmarkModal from '@/components/landmark/LandmarkModal.vue';
 
 const route = useRoute();
@@ -114,8 +115,8 @@ watch(
 
 <template>
   <div class="bg-background">
-    <div class="container mx-auto px-4 py-8 max-w-6xl">
-      <Button variant="ghost" @click="handleBack" class="mb-6">
+    <div class="container mx-auto px-4 py-6 max-w-5xl">
+      <Button variant="ghost" @click="handleBack" class="mb-4">
         <ArrowLeft class="w-4 h-4 mr-2" />
         Back to Map
       </Button>
@@ -130,10 +131,10 @@ watch(
         <Button @click="handleBack">Back to Map</Button>
       </div>
 
-      <div v-else-if="landmark" class="space-y-6">
+      <div v-else-if="landmark" class="space-y-4">
         <div class="flex items-start justify-between">
           <div>
-            <h1 class="text-3xl font-bold mb-2">{{ landmark.title }}</h1>
+            <h2 class="text-3xl font-bold mb-2">{{ landmark.title }}</h2>
             <p class="text-muted-foreground">{{ landmark.description }}</p>
           </div>
 
@@ -145,13 +146,13 @@ watch(
                   Edit
                 </Button>
               </DialogTrigger>
-              <DialogContent class="z-[100] w-full max-w-2xl overflow-y-auto overflow-x-hidden">
+              <DialogScrollContent class="z-[100] w-full max-w-2xl">
                 <LandmarkModal
                   :landmark="landmark"
                   :is-edit="true"
                   @close="isEditDialogOpen = false"
                 />
-              </DialogContent>
+              </DialogScrollContent>
             </Dialog>
 
             <Button variant="destructive" @click="handleDelete">

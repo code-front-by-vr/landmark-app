@@ -1,10 +1,7 @@
 import { z } from 'zod';
 import { VALIDATION_MESSAGES } from '@/config/constants';
 
-const emailSchema = z
-  .string()
-  .min(1, { message: VALIDATION_MESSAGES.EMAIL_REQUIRED })
-  .email({ message: VALIDATION_MESSAGES.EMAIL_INVALID });
+const emailSchema = z.string().email({ message: VALIDATION_MESSAGES.EMAIL_INVALID });
 
 const passwordSchema = z
   .string()
@@ -30,3 +27,7 @@ export const registerSchema = z
 export const forgotPasswordSchema = z.object({
   email: emailSchema,
 });
+
+export type SignInFormData = z.infer<typeof signInSchema>;
+export type RegisterFormData = z.infer<typeof registerSchema>;
+export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;

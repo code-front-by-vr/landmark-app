@@ -1,10 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { RouterLink, useRouter } from 'vue-router';
-import { useForm } from 'vee-validate';
-import { toTypedSchema } from '@vee-validate/zod';
-import { signInSchema } from '@/schemas/auth';
-import { loginUser } from '@/services/auth';
+import { RouterLink } from 'vue-router';
+import { useSignIn } from '@/composables/useSignIn';
 
 import { LogIn, Eye, EyeOff } from 'lucide-vue-next';
 import { Card, CardHeader, CardTitle, CardContent } from '@ui/card';
@@ -13,29 +9,7 @@ import { Input } from '@ui/input';
 import { Button } from '@ui/button';
 import { Spinner } from '@ui/spinner';
 
-const formSchema = toTypedSchema(signInSchema);
-
-const form = useForm({
-  validationSchema: formSchema,
-});
-
-const isLoading = ref(false);
-const showPassword = ref(false);
-
-const router = useRouter();
-
-const onSubmit = form.handleSubmit(async ({ email, password }, { resetForm }) => {
-  isLoading.value = true;
-  try {
-    await loginUser({ email, password });
-    resetForm();
-    router.push('/map');
-  } catch (error) {
-    console.error('Sign in error:', error);
-  } finally {
-    isLoading.value = false;
-  }
-});
+const { isLoading, showPassword, onSubmit } = useSignIn();
 </script>
 
 <template>

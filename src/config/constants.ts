@@ -9,9 +9,11 @@ export const MAP_CONFIG = {
 export const FILE_UPLOAD_CONFIG = {
   MAX_FILES: 5,
   MAX_FILE_SIZE: 10 * 1024 * 1024,
-  ALLOWED_TYPES: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
+  ALLOWED_TYPES: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'] as const,
   STORAGE_PATH: 'landmarks',
 } as const;
+
+export const FILE_UPLOAD_ACCEPT = FILE_UPLOAD_CONFIG.ALLOWED_TYPES.join(',');
 
 export const RATING_CONFIG = {
   MIN: 1,
@@ -33,9 +35,9 @@ export const VALIDATION_MESSAGES = {
   TITLE_REQUIRED: 'Title is required',
   DESCRIPTION_REQUIRED: 'Description is required',
   RATING_REQUIRED: 'Rating is required',
-  RATING_RANGE: 'Rating must be between 1 and 5',
+  RATING_RANGE: `Rating must be between ${RATING_CONFIG.MIN} and ${RATING_CONFIG.MAX}`,
   PHOTOS_MIN: 'Please upload at least one photo',
-  PHOTOS_MAX: 'Maximum 5 photos allowed',
+  PHOTOS_MAX: `Maximum ${FILE_UPLOAD_CONFIG.MAX_FILES} photos allowed`,
   FILE_TOO_LARGE: 'File size must be less than 10MB',
   FILE_TYPE_INVALID: 'Invalid file type. Only images are allowed',
 } as const;

@@ -1,10 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { RouterLink, useRouter } from 'vue-router';
-import { useForm } from 'vee-validate';
-import { toTypedSchema } from '@vee-validate/zod';
-import { registerSchema } from '@/schemas/auth';
-import { registerUser } from '@/services/auth';
+import { RouterLink } from 'vue-router';
+import { useRegister } from '@/composables/useRegister';
 
 import { UserPlus, Eye, EyeOff } from 'lucide-vue-next';
 import { Card, CardHeader, CardTitle, CardContent } from '@ui/card';
@@ -13,31 +9,7 @@ import { Input } from '@ui/input';
 import { Button } from '@ui/button';
 import { Spinner } from '@ui/spinner';
 
-const formSchema = toTypedSchema(registerSchema);
-
-const form = useForm({
-  validationSchema: formSchema,
-});
-
-const isLoading = ref(false);
-const showPassword = ref(false);
-const showConfirmPassword = ref(false);
-
-const router = useRouter();
-
-const onSubmit = form.handleSubmit(async ({ email, password }, { resetForm }) => {
-  isLoading.value = true;
-
-  try {
-    await registerUser({ email, password });
-    resetForm();
-    router.push('/');
-  } catch (error) {
-    console.error('Register error:', error);
-  } finally {
-    isLoading.value = false;
-  }
-});
+const { isLoading, showPassword, showConfirmPassword, onSubmit } = useRegister();
 </script>
 
 <template>

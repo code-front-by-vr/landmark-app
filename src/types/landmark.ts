@@ -1,5 +1,3 @@
-import { serverTimestamp } from '@/api/firebase';
-
 export interface Landmark {
   id?: string;
   title: string;
@@ -9,22 +7,10 @@ export interface Landmark {
   rating: number;
   visits: number;
   createdBy: string;
-  createdAt: ReturnType<typeof serverTimestamp>;
   userRatings: Record<string, number>;
 }
 
-export interface NewLandmarkInput {
-  title: string;
-  description: string;
-  location: { lat: number; lng: number };
-  rating?: number;
-  createdBy: string;
-}
-
-export interface LandmarkCardProps {
-  id?: string;
-  title: string;
-  description: string;
-  rating: number;
-  visits: number;
-}
+export type NewLandmarkInput = Pick<
+  Landmark,
+  'title' | 'description' | 'location' | 'rating' | 'createdBy'
+>;

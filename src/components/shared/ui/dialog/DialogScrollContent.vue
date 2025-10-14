@@ -10,7 +10,7 @@ import {
   DialogPortal,
   useForwardPropsEmits,
 } from 'reka-ui';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/tailwind';
 
 const props = defineProps<DialogContentProps & { class?: HTMLAttributes['class'] }>();
 const emits = defineEmits<DialogContentEmits>();
@@ -28,7 +28,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits);
       <DialogContent
         :class="
           cn(
-            'relative z-50 grid w-full max-w-lg my-8 gap-4 border border-border bg-background p-6 shadow-lg duration-200 sm:rounded-lg md:w-full',
+            'relative z-50 grid w-full max-w-[calc(100%-2rem)] my-8 gap-4 border border-border bg-background p-6 shadow-lg duration-200 sm:rounded-lg sm:max-w-lg',
             props.class
           )
         "
