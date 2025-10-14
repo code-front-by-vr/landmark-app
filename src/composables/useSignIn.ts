@@ -3,10 +3,11 @@ import { useRouter } from 'vue-router';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/zod';
 import { signInSchema } from '@/schemas/auth';
-import { loginUserService } from '@/services/auth';
+import { useAuthStore } from '@/stores/auth';
 
 export function useSignIn() {
   const router = useRouter();
+  const authStore = useAuthStore();
 
   const formSchema = toTypedSchema(signInSchema);
 
@@ -15,13 +16,12 @@ export function useSignIn() {
   });
 
   const isLoading = ref(false);
-  const showPassword = ref(false);
 
   const onSubmit = form.handleSubmit(async ({ email, password }, { resetForm }) => {
     isLoading.value = true;
 
     try {
-      await loginUserService({ email, password });
+      await authStore.login({ email, password });
 
       resetForm();
       router.push('/map');
@@ -35,7 +35,6 @@ export function useSignIn() {
   return {
     form,
     isLoading,
-    showPassword,
     onSubmit,
   };
 }

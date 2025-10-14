@@ -23,8 +23,6 @@ export const RATING_CONFIG = {
 
 export type Rating = 1 | 2 | 3 | 4 | 5;
 
-export type AllowedFileType = (typeof FILE_UPLOAD_CONFIG.ALLOWED_TYPES)[number];
-
 export const LANDMARK_CONFIG = {
   DEFAULT_LIMIT: 10,
 } as const;

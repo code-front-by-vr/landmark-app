@@ -22,7 +22,7 @@ import {
 } from '@/api/firebase';
 import type { Landmark, NewLandmarkInput } from '@/types/landmark';
 import { calculateRatingStats } from '@/lib/utils';
-import { LANDMARK_CONFIG, FILE_UPLOAD_CONFIG } from '@/config/constants';
+import { LANDMARK_CONFIG, FILE_UPLOAD_CONFIG, type Rating } from '@/config/constants';
 
 const landmarkCollection = collection(db, 'landmarks');
 
@@ -84,21 +84,10 @@ export async function addLandmarkService(
   return { id: docSnap.id, ...docSnap.data() } as Landmark;
 }
 
-export async function getLandmarkByIdService(id: string): Promise<Landmark> {
-  const docRef = doc(db, 'landmarks', id);
-  const docSnap = await getDoc(docRef);
-
-  if (!docSnap.exists()) {
-    throw new Error(`Landmark with id ${id} not found`);
-  }
-
-  return { id: docSnap.id, ...docSnap.data() } as Landmark;
-}
-
 export async function rateLandmarkService(
   landmarkId: string,
   userId: string,
-  rating: number
+  rating: Rating
 ): Promise<Landmark> {
   const landmarkRef = doc(db, 'landmarks', landmarkId);
 
@@ -148,7 +137,8 @@ export async function getUserLandmarksService(userId: string): Promise<Landmark[
 export async function updateLandmarkService(
   landmarkId: string,
   landmark: NewLandmarkInput,
-  files: File[]
+  files: File[],
+  photosToDelete: string[] = []
 ): Promise<Landmark> {
   const landmarkRef = doc(db, 'landmarks', landmarkId);
   const landmarkDoc = await getDoc(landmarkRef);
@@ -159,7 +149,16 @@ export async function updateLandmarkService(
 
   const existingLandmark = landmarkDoc.data() as Landmark;
 
-  let photosUrl = [...(existingLandmark.photos || [])];
+  for (const photoUrl of photosToDelete) {
+    try {
+      const photoRef = ref(storage, photoUrl);
+      await deleteObject(photoRef);
+    } catch (error) {
+      console.warn('Failed to delete photo:', error);
+    }
+  }
+
+  let photosUrl = (existingLandmark.photos || []).filter(photo => !photosToDelete.includes(photo));
 
   if (files.length > 0) {
     const newPhotos = await uploadFiles(files, landmarkId);

@@ -9,12 +9,15 @@ import LandmarkModal from '@/components/landmark/LandmarkModal.vue';
 import { Plus, MapPinned } from 'lucide-vue-next';
 import LandmarkCard from '@/components/landmark/LandmarkCard.vue';
 import { useLandmarkStore } from '@/stores/landmark';
+import { useAuthStore } from '@/stores/auth';
 import { useLeafletMap } from '@/composables/useLeafletMap';
 import { MAP_CONFIG } from '@/config/constants';
 
 const router = useRouter();
 const isDialogOpen = ref(false);
+const showOnlyMyLandmarks = ref(false);
 const landmarkStore = useLandmarkStore();
+const authStore = useAuthStore();
 const markers = ref<Marker[]>([]);
 
 const { map } = useLeafletMap({
@@ -41,6 +44,18 @@ const updateMapMarkers = () => {
     markers.value.push(marker);
   });
 };
+
+async function toggleMyLandmarks() {
+  showOnlyMyLandmarks.value = !showOnlyMyLandmarks.value;
+
+  if (showOnlyMyLandmarks.value && authStore.user) {
+    await landmarkStore.fetchUserLandmarks(authStore.user.uid);
+  } else {
+    await landmarkStore.fetchLandmarks();
+  }
+
+  updateMapMarkers();
+}
 
 onMounted(async () => {
   await landmarkStore.fetchLandmarks();
@@ -79,7 +94,9 @@ watch(() => landmarkStore.landmarks, updateMapMarkers, { deep: true });
           </h2>
         </div>
 
-        <Button variant="outline" size="sm" class="w-full"> Show Only My Landmarks </Button>
+        <Button variant="outline" size="sm" class="w-full" @click="toggleMyLandmarks">
+          {{ showOnlyMyLandmarks ? 'Show All Landmarks' : 'Show Only My Landmarks' }}
+        </Button>
       </div>
 
       <div class="flex-1 overflow-y-auto p-4 space-y-3">

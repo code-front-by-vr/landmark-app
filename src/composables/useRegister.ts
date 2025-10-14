@@ -3,10 +3,11 @@ import { useRouter } from 'vue-router';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/zod';
 import { registerSchema } from '@/schemas/auth';
-import { registerUserService } from '@/services/auth';
+import { useAuthStore } from '@/stores/auth';
 
 export function useRegister() {
   const router = useRouter();
+  const authStore = useAuthStore();
 
   const formSchema = toTypedSchema(registerSchema);
 
@@ -15,14 +16,12 @@ export function useRegister() {
   });
 
   const isLoading = ref(false);
-  const showPassword = ref(false);
-  const showConfirmPassword = ref(false);
 
   const onSubmit = form.handleSubmit(async ({ email, password }, { resetForm }) => {
     isLoading.value = true;
 
     try {
-      await registerUserService({ email, password });
+      await authStore.register({ email, password });
       resetForm();
       router.push('/');
     } catch (error) {
@@ -35,8 +34,6 @@ export function useRegister() {
   return {
     form,
     isLoading,
-    showPassword,
-    showConfirmPassword,
     onSubmit,
   };
 }

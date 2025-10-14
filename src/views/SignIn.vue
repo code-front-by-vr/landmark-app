@@ -2,14 +2,14 @@
 import { RouterLink } from 'vue-router';
 import { useSignIn } from '@/composables/useSignIn';
 
-import { LogIn, Eye, EyeOff } from 'lucide-vue-next';
+import { LogIn } from 'lucide-vue-next';
 import { Card, CardHeader, CardTitle, CardContent } from '@ui/card';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@ui/form';
-import { Input } from '@ui/input';
+import { Input, PasswordInput } from '@ui/input';
 import { Button } from '@ui/button';
 import { Spinner } from '@ui/spinner';
 
-const { isLoading, showPassword, onSubmit } = useSignIn();
+const { isLoading, onSubmit } = useSignIn();
 </script>
 
 <template>
@@ -42,25 +42,11 @@ const { isLoading, showPassword, onSubmit } = useSignIn();
               <FormItem class="mb-4">
                 <FormLabel class="text-sm font-medium text-gray-900">Password</FormLabel>
                 <FormControl>
-                  <div class="relative">
-                    <Input
-                      v-bind="componentField"
-                      :type="showPassword ? 'text' : 'password'"
-                      placeholder="••••••••"
-                      :disabled="isLoading"
-                      autocomplete="current-password"
-                      class="px-3 py-2.5 pr-10 border-gray-300"
-                    />
-                    <button
-                      type="button"
-                      @click="showPassword = !showPassword"
-                      class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
-                      :disabled="isLoading"
-                    >
-                      <Eye v-if="!showPassword" class="w-4 h-4" />
-                      <EyeOff v-else class="w-4 h-4" />
-                    </button>
-                  </div>
+                  <PasswordInput
+                    v-bind="componentField"
+                    :disabled="isLoading"
+                    autocomplete="current-password"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

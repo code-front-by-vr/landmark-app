@@ -31,7 +31,7 @@ const isOwner = computed(() =>
 const userRating = computed(() =>
   authStore.user ? landmarkStore.getUserRating(landmarkId.value, authStore.user.uid) : null
 );
-const overallRating = computed(() => landmarkStore.getOverallRating(landmarkId.value));
+const overallRating = computed(() => landmark.value?.rating || 0);
 
 const ratingsCount = computed(() => Object.keys(landmark.value?.userRatings || {}).length);
 

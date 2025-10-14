@@ -9,7 +9,7 @@ import { Input } from '@ui/input';
 import { Textarea } from '@ui/textarea';
 import { Button } from '@ui/button';
 import { Label } from '@ui/label';
-import { Upload, MapPin } from 'lucide-vue-next';
+import { Upload, MapPin, X } from 'lucide-vue-next';
 
 const props = defineProps<{
   isEdit?: boolean;
@@ -26,10 +26,15 @@ const {
   uploadedFiles,
   fileInputRef,
   handleFileSelect,
+  handleFileDrop,
   maxNewFiles,
   isEditMode,
   onSubmit,
+  removePhoto,
+  existingPhotos,
 } = useLandmarkModal(props, emit);
+
+const getFilePreview = (file: File) => URL.createObjectURL(file);
 </script>
 
 <template>
@@ -113,6 +118,9 @@ const {
           <FormControl>
             <div class="space-y-4">
               <div
+                @drop.prevent="handleFileDrop"
+                @dragover.prevent
+                @dragleave.prevent
                 :class="[
                   'relative border-2 border-dashed rounded-lg p-4 transition-all',
                   'border-border hover:border-primary/50 hover:bg-accent/30',
@@ -151,14 +159,16 @@ const {
               </div>
 
               <div
-                v-if="isEditMode && landmark?.photos && landmark.photos.length > 0"
+                v-if="(isEditMode && existingPhotos.length > 0) || uploadedFiles.length > 0"
                 class="space-y-2"
               >
-                <p class="text-sm font-medium">Existing photos ({{ landmark.photos.length }})</p>
+                <p class="text-sm font-medium">
+                  Photos ({{ existingPhotos.length + uploadedFiles.length }})
+                </p>
                 <div class="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
                   <div
-                    v-for="(photo, index) in landmark.photos"
-                    :key="index"
+                    v-for="(photo, index) in existingPhotos"
+                    :key="`existing-${index}`"
                     class="relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border border-border"
                   >
                     <img
@@ -166,6 +176,30 @@ const {
                       :alt="`Photo ${index + 1}`"
                       class="w-full h-full object-cover"
                     />
+                    <div
+                      class="absolute top-1 right-1 cursor-pointer z-10 bg-destructive/80 hover:bg-destructive rounded-full p-0.5 transition-colors"
+                      @click="removePhoto(photo)"
+                    >
+                      <X class="w-3 h-3 text-destructive-foreground" />
+                    </div>
+                  </div>
+
+                  <div
+                    v-for="(file, index) in uploadedFiles"
+                    :key="`new-${index}`"
+                    class="relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border border-border"
+                  >
+                    <img
+                      :src="getFilePreview(file)"
+                      :alt="`New photo ${existingPhotos.length + index + 1}`"
+                      class="w-full h-full object-cover"
+                    />
+                    <div
+                      class="absolute top-1 right-1 cursor-pointer z-10 bg-destructive/80 hover:bg-destructive rounded-full p-0.5 transition-colors"
+                      @click="removePhoto(index)"
+                    >
+                      <X class="w-3 h-3 text-destructive-foreground" />
+                    </div>
                   </div>
                 </div>
               </div>

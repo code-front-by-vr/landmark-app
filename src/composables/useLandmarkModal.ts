@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useLandmarkStore } from '@/stores/landmark';
 import type { LatLngExpression } from 'leaflet';
 import type { NewLandmarkInput, Landmark } from '@/types/landmark';
+import type { Rating } from '@/config/constants';
 
 interface UseLandmarkModalProps {
   isEdit?: boolean;
@@ -20,6 +21,7 @@ export function useLandmarkModal(props: UseLandmarkModalProps, emit: (event: 'cl
 
   const isLoading = ref(false);
   const error = ref<string | null>(null);
+  const photosToDelete = ref<string[]>([]);
 
   const isEditMode = computed(() => props.isEdit && props.landmark);
 
@@ -47,17 +49,35 @@ export function useLandmarkModal(props: UseLandmarkModalProps, emit: (event: 'cl
   });
 
   const maxFiles = 5;
-  const existingPhotosCount = computed(() => props.landmark?.photos?.length || 0);
+
+  const existingPhotos = computed(() => {
+    if (!props.landmark?.photos) return [];
+    return props.landmark.photos.filter(photo => !photosToDelete.value.includes(photo));
+  });
+
+  const existingPhotosCount = computed(() => existingPhotos.value.length);
   const maxNewFiles = computed(() => Math.max(0, maxFiles - existingPhotosCount.value));
 
   const {
     files: uploadedFiles,
     fileInputRef,
     handleFileSelect,
+    handleFileDrop,
     clearFiles,
+    removeFile: removeNewFile,
   } = useFileUpload({
     maxFiles: maxNewFiles.value,
   });
+
+  const removePhoto = (item: string | number) => {
+    if (typeof item === 'string') {
+      if (!photosToDelete.value.includes(item)) {
+        photosToDelete.value.push(item);
+      }
+    } else {
+      removeNewFile(item);
+    }
+  };
 
   onMounted(() => {
     error.value = null;
@@ -101,17 +121,22 @@ export function useLandmarkModal(props: UseLandmarkModalProps, emit: (event: 'cl
           lng: marker.value.getLatLng().lng,
         },
         createdBy: authStore.user.uid,
-        rating: values.userRating,
+        rating: values.userRating as Rating,
       };
 
       if (isEditMode.value && props.landmark) {
-        await landmarkStore.updateLandmark(props.landmark.id, landmarkData, uploadedFiles.value);
+        await landmarkStore.updateLandmark(
+          props.landmark.id,
+          landmarkData,
+          uploadedFiles.value,
+          photosToDelete.value
+        );
 
         if (values.userRating) {
           await landmarkStore.rateLandmark(
             props.landmark.id,
             authStore.user.uid,
-            values.userRating
+            values.userRating as Rating
           );
         }
       } else {
@@ -135,7 +160,10 @@ export function useLandmarkModal(props: UseLandmarkModalProps, emit: (event: 'cl
     marker,
     uploadedFiles,
     fileInputRef,
+    removePhoto,
+    existingPhotos,
     handleFileSelect,
+    handleFileDrop,
     maxNewFiles,
     existingPhotosCount,
     isEditMode,

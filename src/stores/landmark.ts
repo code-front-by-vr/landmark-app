@@ -1,14 +1,15 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import type { Landmark, NewLandmarkInput } from '@/types/landmark';
+import type { Rating } from '@/config/constants';
 import {
   getLandmarksService,
   addLandmarkService,
   rateLandmarkService,
   deleteLandmarkService,
   updateLandmarkService,
+  getUserLandmarksService,
 } from '@/services/landmark';
-import { calculateRatingStats } from '@/lib/utils';
 
 export const useLandmarkStore = defineStore('landmark', () => {
   const landmarks = ref<Landmark[]>([]);
@@ -29,14 +30,6 @@ export const useLandmarkStore = defineStore('landmark', () => {
     return landmark.userRatings[userId] || null;
   }
 
-  function getOverallRating(landmarkId: string) {
-    const landmark = getLandmarkById(landmarkId);
-    if (!landmark) return 0;
-
-    const { rating } = calculateRatingStats(landmark.userRatings || {});
-    return rating;
-  }
-
   function addLandmarkToStore(newLandmark: Landmark) {
     landmarks.value.push(newLandmark);
   }
@@ -45,17 +38,31 @@ export const useLandmarkStore = defineStore('landmark', () => {
     landmarks.value = await getLandmarksService();
   }
 
+  async function fetchUserLandmarks(userId: string) {
+    landmarks.value = await getUserLandmarksService(userId);
+  }
+
   async function createLandmark(landmark: NewLandmarkInput, files: File[]) {
     const createdLandmark = await addLandmarkService(landmark, files);
     addLandmarkToStore(createdLandmark);
   }
 
-  async function updateLandmark(landmarkId: string, landmark: NewLandmarkInput, files: File[]) {
-    const updatedLandmark = await updateLandmarkService(landmarkId, landmark, files);
+  async function updateLandmark(
+    landmarkId: string,
+    landmark: NewLandmarkInput,
+    files: File[],
+    photosToDelete: string[] = []
+  ) {
+    const updatedLandmark = await updateLandmarkService(
+      landmarkId,
+      landmark,
+      files,
+      photosToDelete
+    );
     landmarks.value = landmarks.value.map(l => (l.id === landmarkId ? updatedLandmark : l));
   }
 
-  async function rateLandmark(landmarkId: string, userId: string, rating: number) {
+  async function rateLandmark(landmarkId: string, userId: string, rating: Rating) {
     const updatedLandmark = await rateLandmarkService(landmarkId, userId, rating);
     landmarks.value = landmarks.value.map(l => (l.id === landmarkId ? updatedLandmark : l));
   }
@@ -70,9 +77,8 @@ export const useLandmarkStore = defineStore('landmark', () => {
     getLandmarkById,
     isOwner,
     getUserRating,
-    getOverallRating,
-    addLandmarkToStore,
     fetchLandmarks,
+    fetchUserLandmarks,
     createLandmark,
     updateLandmark,
     rateLandmark,

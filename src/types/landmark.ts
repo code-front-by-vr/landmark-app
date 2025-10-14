@@ -1,10 +1,12 @@
+import type { Rating } from '@/config/constants';
+
 export interface Location {
   readonly lat: number;
   readonly lng: number;
 }
 
 export interface UserRatings {
-  readonly [userId: string]: number;
+  readonly [userId: string]: Rating;
 }
 
 export interface LandmarkBase {
@@ -25,5 +27,5 @@ export type NewLandmarkInput = Pick<
   LandmarkBase,
   'title' | 'description' | 'location' | 'createdBy'
 > & {
-  rating?: number;
+  rating?: Rating;
 };
