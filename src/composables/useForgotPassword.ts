@@ -17,12 +17,11 @@ export function useForgotPassword() {
     mutationFn: (values: ForgotPasswordFormData) => authStore.forgotPassword(values),
     onSuccess: () => {
       form.resetForm();
-      toast.success('Email Sent', {
-        description: 'Check your email to reset your password.',
-      });
     },
-    onError: () => {
-      toast.error('Password Reset Error', { description: 'Failed to send reset email' });
+    onError: error => {
+      toast.error('Password Reset Error', {
+        description: `Failed to send reset email: ${error.message}`,
+      });
     },
   });
   const onSubmit = form.handleSubmit(values => mutation.mutate(values));

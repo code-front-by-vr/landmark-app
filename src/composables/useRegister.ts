@@ -20,13 +20,10 @@ export function useRegister() {
     mutationFn: (values: RegisterFormData) => authStore.register(values),
     onSuccess: () => {
       form.resetForm();
-      toast.success('Registration Successful', {
-        description: 'Your account has been created. You can now sign in.',
-      });
       router.push('/');
     },
-    onError: () => {
-      toast.error('Registration Error', { description: 'Failed to register' });
+    onError: error => {
+      toast.error('Registration Error', { description: `Failed to register: ${error.message}` });
     },
   });
 

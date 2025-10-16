@@ -20,9 +20,6 @@ export function useSignIn() {
     mutationFn: (values: SignInFormData) => authStore.login(values),
     onSuccess: () => {
       form.resetForm();
-      toast.success('Success', {
-        description: 'You have successfully signed in',
-      });
       router.push('/map');
     },
     onError: error => {

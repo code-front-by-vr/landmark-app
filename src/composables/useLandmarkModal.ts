@@ -159,10 +159,8 @@ export function useLandmarkModal({
       clearFiles();
 
       onClose();
-    } catch {
-      toast.error(isEditMode.value ? 'Update Error' : 'Create Error', {
-        description: `An error occurred: ${error.value}`,
-      });
+    } catch (error) {
+      console.error(error);
     } finally {
       isLoading.value = false;
     }
