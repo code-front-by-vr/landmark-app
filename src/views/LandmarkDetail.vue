@@ -17,15 +17,11 @@ const landmarkStore = useLandmarkStore();
 const authStore = useAuthStore();
 
 const isEditDialogOpen = ref(false);
-const isLoading = ref(true);
-const error = ref<string | null>(null);
-
 const landmarkId = computed(() => route.params.id as string);
-
 const landmark = computed(() => landmarkStore.getLandmarkById(landmarkId.value));
 
 const isOwner = computed(() =>
-  authStore.user ? landmarkStore.isOwner(landmarkId.value, authStore.user.uid) : false
+  authStore.user ? landmarkStore.checkUserIsOwner(landmarkId.value, authStore.user.uid) : false
 );
 
 const userRating = computed(() =>
@@ -65,12 +61,14 @@ async function initializeMapWithLandmark() {
 
   await nextTick();
 
-  const success = await initializeMap();
+  const result = await initializeMap();
 
-  if (success && map.value) {
+  if (result.success && map.value) {
     const { lat, lng } = landmark.value.location;
     setView([lat, lng]);
     createMarker([lat, lng]);
+  } else if (!result.success) {
+    console.error('Failed to initialize map:', result.error, result.message);
   }
 }
 
@@ -83,18 +81,8 @@ async function updateMapWithLandmark() {
 }
 
 onMounted(async () => {
-  try {
-    if (landmarkStore.landmarks.length === 0) {
-      await landmarkStore.fetchLandmarks();
-    }
-    if (!landmark.value) {
-      error.value = 'Landmark not found';
-      return;
-    }
-  } catch (err) {
-    console.error('Error loading landmark:', err);
-  } finally {
-    isLoading.value = false;
+  if (landmarkStore.landmarks.length === 0) {
+    await landmarkStore.fetchLandmarks();
   }
 
   if (landmark.value) {
@@ -121,13 +109,13 @@ watch(
         Back to Map
       </Button>
 
-      <div v-if="isLoading" class="text-center py-12">
+      <div v-if="landmarkStore.isLoading" class="text-center py-12">
         <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         <p class="text-muted-foreground mt-4">Loading landmark...</p>
       </div>
 
-      <div v-else-if="error" class="text-center py-12">
-        <p class="text-destructive mb-4">{{ error }}</p>
+      <div v-else-if="landmarkStore.error" class="text-center py-12">
+        <p class="text-destructive mb-4">{{ landmarkStore.error }}</p>
         <Button @click="handleBack">Back to Map</Button>
       </div>
 
@@ -147,11 +135,7 @@ watch(
                 </Button>
               </DialogTrigger>
               <DialogScrollContent class="z-[100] w-full max-w-2xl">
-                <LandmarkModal
-                  :landmark="landmark"
-                  :is-edit="true"
-                  @close="isEditDialogOpen = false"
-                />
+                <LandmarkModal :landmark-id="landmark?.id" @close="isEditDialogOpen = false" />
               </DialogScrollContent>
             </Dialog>
 
@@ -222,13 +206,13 @@ watch(
           <CardContent>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div
-                v-for="(photo, index) in landmark.photos"
-                :key="index"
+                v-for="photo in landmark.photos"
+                :key="photo.id"
                 class="aspect-square rounded-lg overflow-hidden"
               >
                 <img
-                  :src="photo"
-                  :alt="`${landmark.title} - Photo ${index + 1}`"
+                  :src="photo.url"
+                  :alt="`${landmark.title} - ${photo.fileName}`"
                   class="w-full h-full object-cover"
                 />
               </div>

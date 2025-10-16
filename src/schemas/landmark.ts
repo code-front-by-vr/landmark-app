@@ -2,12 +2,7 @@ import { z } from 'zod';
 import { VALIDATION_MESSAGES, RATING_CONFIG, FILE_UPLOAD_CONFIG } from '@/config/constants';
 
 function isValidRating(value: number): boolean {
-  return (
-    !Object.is(value, NaN) &&
-    Number.isFinite(value) &&
-    value >= RATING_CONFIG.MIN &&
-    value <= RATING_CONFIG.MAX
-  );
+  return !Object.is(value, NaN) && value >= RATING_CONFIG.MIN && value <= RATING_CONFIG.MAX;
 }
 
 export const landmarkSchema = z.object({
@@ -30,7 +25,7 @@ export const landmarkSchema = z.object({
         ),
       { message: VALIDATION_MESSAGES.FILE_TYPE_INVALID }
     )
-    .refine(files => files.every(file => file.size <= FILE_UPLOAD_CONFIG.MAX_FILE_SIZE), {
+    .refine(files => files.every(file => file.size <= FILE_UPLOAD_CONFIG.MAX_FILE_SIZE_BYTES), {
       message: VALIDATION_MESSAGES.FILE_TOO_LARGE,
     })
     .optional()

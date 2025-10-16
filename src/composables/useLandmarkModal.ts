@@ -6,24 +6,36 @@ import { useLeafletMap } from '@/composables/useLeafletMap';
 import { useFileUpload } from '@/composables/useFileUpload';
 import { useAuthStore } from '@/stores/auth';
 import { useLandmarkStore } from '@/stores/landmark';
-import type { LatLngExpression } from 'leaflet';
-import type { NewLandmarkInput, Landmark } from '@/types/landmark';
+import type { NewLandmarkInput } from '@/types/landmark';
 import type { Rating } from '@/config/constants';
 
-interface UseLandmarkModalProps {
-  isEdit?: boolean;
-  landmark?: Landmark;
+interface UseLandmarkModalOptions {
+  landmarkId?: string;
+  onClose: () => void;
+  maxFiles: number;
+  mapContainerId?: string;
 }
 
-export function useLandmarkModal(props: UseLandmarkModalProps, emit: (event: 'close') => void) {
+export function useLandmarkModal({
+  landmarkId,
+  onClose,
+  maxFiles,
+  mapContainerId = 'landmark-map',
+}: UseLandmarkModalOptions) {
   const authStore = useAuthStore();
   const landmarkStore = useLandmarkStore();
 
+  const landmark = computed(() => {
+    if (!landmarkId) return;
+
+    return landmarkStore.getLandmarkById(landmarkId);
+  });
+
   const isLoading = ref(false);
   const error = ref<string | null>(null);
-  const photosToDelete = ref<string[]>([]);
+  const photoIdsToDelete = ref<string[]>([]);
 
-  const isEditMode = computed(() => props.isEdit && props.landmark);
+  const isEditMode = computed(() => !!landmark.value);
 
   const formSchema = toTypedSchema(landmarkSchema);
 
@@ -34,26 +46,16 @@ export function useLandmarkModal(props: UseLandmarkModalProps, emit: (event: 'cl
     },
   });
 
-  const landmarkLocation = computed((): LatLngExpression | null => {
-    if (props.landmark) {
-      return [props.landmark.location.lat, props.landmark.location.lng];
-    }
-    return null;
-  });
-
   const { marker } = useLeafletMap({
-    containerId: 'landmark-map',
-    center: landmarkLocation.value || undefined,
+    containerId: mapContainerId,
+    center: landmark.value?.location ?? null,
     enableClick: true,
-    initialMarker: landmarkLocation.value || undefined,
+    initialMarker: landmark.value?.location ?? null,
   });
 
-  const maxFiles = 5;
-
-  const existingPhotos = computed(() => {
-    if (!props.landmark?.photos) return [];
-    return props.landmark.photos.filter(photo => !photosToDelete.value.includes(photo));
-  });
+  const existingPhotos = computed(
+    () => landmark.value?.photos?.filter(photo => !photoIdsToDelete.value.includes(photo.id)) ?? []
+  );
 
   const existingPhotosCount = computed(() => existingPhotos.value.length);
   const maxNewFiles = computed(() => Math.max(0, maxFiles - existingPhotosCount.value));
@@ -65,29 +67,32 @@ export function useLandmarkModal(props: UseLandmarkModalProps, emit: (event: 'cl
     handleFileDrop,
     clearFiles,
     removeFile: removeNewFile,
+    getFileId,
   } = useFileUpload({
     maxFiles: maxNewFiles.value,
   });
 
-  const removePhoto = (item: string | number) => {
-    if (typeof item === 'string') {
-      if (!photosToDelete.value.includes(item)) {
-        photosToDelete.value.push(item);
+  const removePhoto = (photoId: string) => {
+    const isExistingPhoto = existingPhotos.value.some(photo => photo.id === photoId);
+
+    if (isExistingPhoto) {
+      if (!photoIdsToDelete.value.includes(photoId)) {
+        photoIdsToDelete.value.push(photoId);
       }
     } else {
-      removeNewFile(item);
+      removeNewFile(photoId);
     }
   };
 
   onMounted(() => {
     error.value = null;
 
-    if (isEditMode.value && props.landmark) {
-      form.setFieldValue('title', props.landmark.title);
-      form.setFieldValue('description', props.landmark.description);
+    if (isEditMode.value && landmark.value) {
+      form.setFieldValue('title', landmark.value.title);
+      form.setFieldValue('description', landmark.value.description);
 
       if (authStore.user) {
-        const userRating = landmarkStore.getUserRating(props.landmark.id, authStore.user.uid);
+        const userRating = landmarkStore.getUserRating(landmark.value.id, authStore.user.uid);
         if (userRating) {
           form.setFieldValue('userRating', userRating);
         }
@@ -124,17 +129,17 @@ export function useLandmarkModal(props: UseLandmarkModalProps, emit: (event: 'cl
         rating: values.userRating as Rating,
       };
 
-      if (isEditMode.value && props.landmark) {
+      if (isEditMode.value && landmark.value) {
         await landmarkStore.updateLandmark(
-          props.landmark.id,
+          landmark.value.id,
           landmarkData,
           uploadedFiles.value,
-          photosToDelete.value
+          photoIdsToDelete.value
         );
 
         if (values.userRating) {
           await landmarkStore.rateLandmark(
-            props.landmark.id,
+            landmark.value.id,
             authStore.user.uid,
             values.userRating as Rating
           );
@@ -145,7 +150,7 @@ export function useLandmarkModal(props: UseLandmarkModalProps, emit: (event: 'cl
       form.resetForm();
       clearFiles();
 
-      emit('close');
+      onClose();
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'An error occurred';
     } finally {
@@ -168,5 +173,6 @@ export function useLandmarkModal(props: UseLandmarkModalProps, emit: (event: 'cl
     existingPhotosCount,
     isEditMode,
     onSubmit,
+    getFileId,
   };
 }

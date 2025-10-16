@@ -27,8 +27,8 @@ function handleLogout() {
   <header class="w-full border-b">
     <div class="container mx-auto px-4 py-2 md:px-6">
       <nav>
-        <ul class="flex justify-between items-center list-none">
-          <li>
+        <ul class="flex justify-between items-center gap-6 list-none">
+          <li class="mr-auto">
             <RouterLink
               to="/"
               class="flex items-center gap-2 font-bold text-lg md:text-xl text-primary hover:text-primary/80 transition-colors group"
@@ -45,42 +45,34 @@ function handleLogout() {
           </li>
 
           <template v-if="authStore.isAuthenticated">
+            <li v-for="link in navLinks" :key="link.to">
+              <RouterLink
+                :to="link.to"
+                class="text-md font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                active-class="!text-primary"
+              >
+                {{ link.label }}
+              </RouterLink>
+            </li>
             <li>
-              <ul class="flex items-center gap-6 list-none">
-                <li v-for="link in navLinks" :key="link.to">
-                  <RouterLink
-                    :to="link.to"
-                    class="text-md font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                    active-class="!text-primary"
-                  >
-                    {{ link.label }}
-                  </RouterLink>
-                </li>
-                <li>
-                  <button
-                    @click="handleLogout"
-                    class="text-md font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                  >
-                    Logout
-                  </button>
-                </li>
-              </ul>
+              <button
+                @click="handleLogout"
+                class="text-md font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              >
+                Logout
+              </button>
             </li>
           </template>
 
           <template v-else>
-            <li>
-              <ul class="flex items-center gap-6 list-none">
-                <li v-for="link in navLinks" :key="link.to">
-                  <RouterLink
-                    :to="link.to"
-                    class="text-md font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                    active-class="!text-primary"
-                  >
-                    {{ link.label }}
-                  </RouterLink>
-                </li>
-              </ul>
+            <li v-for="link in navLinks" :key="link.to">
+              <RouterLink
+                :to="link.to"
+                class="text-md font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                active-class="!text-primary"
+              >
+                {{ link.label }}
+              </RouterLink>
             </li>
           </template>
         </ul>

@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { computed, onUnmounted } from 'vue';
 import { useLandmarkModal } from '@/composables/useLandmarkModal';
-import type { Landmark } from '@/types/landmark';
-import { FILE_UPLOAD_ACCEPT } from '@/config/constants';
+import { FILE_UPLOAD_ACCEPT, FILE_UPLOAD_CONFIG } from '@/config/constants';
+import { createFileUrlManager } from '@/lib';
 
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@ui/dialog';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@ui/form';
@@ -12,13 +13,19 @@ import { Label } from '@ui/label';
 import { Upload, MapPin, X } from 'lucide-vue-next';
 
 const props = defineProps<{
-  isEdit?: boolean;
-  landmark?: Landmark;
+  landmarkId?: string;
 }>();
 
 const emit = defineEmits<{
-  close: [];
+  (e: 'close'): void;
 }>();
+
+const fileUrlManager = createFileUrlManager();
+
+const handleClose = () => {
+  fileUrlManager.revokeAll();
+  emit('close');
+};
 
 const {
   isLoading,
@@ -32,9 +39,38 @@ const {
   onSubmit,
   removePhoto,
   existingPhotos,
-} = useLandmarkModal(props, emit);
+  getFileId,
+} = useLandmarkModal({
+  landmarkId: props.landmarkId,
+  onClose: handleClose,
+  maxFiles: FILE_UPLOAD_CONFIG.MAX_FILES,
+});
 
-const getFilePreview = (file: File) => URL.createObjectURL(file);
+const getFilePreview = (file: File): string => fileUrlManager.getUrl(file);
+
+onUnmounted(() => {
+  fileUrlManager.revokeAll();
+});
+
+const uploadMessage = computed(() => {
+  if (uploadedFiles.value.length >= maxNewFiles.value) {
+    return 'Maximum files reached';
+  }
+
+  if (isEditMode.value) {
+    return `Add more images (${maxNewFiles.value} more allowed)`;
+  }
+
+  return 'Drop images here or click to upload';
+});
+
+const submitButtonText = computed(() => {
+  if (isLoading.value) {
+    return isEditMode.value ? 'Updating...' : 'Adding...';
+  }
+
+  return isEditMode.value ? 'Update Landmark' : 'Add Landmark';
+});
 </script>
 
 <template>
@@ -142,17 +178,11 @@ const getFilePreview = (file: File) => URL.createObjectURL(file);
                   <Upload class="w-6 h-6 text-muted-foreground flex-shrink-0" />
                   <div class="flex-1 min-w-0">
                     <p class="text-sm font-medium text-foreground truncate">
-                      {{
-                        uploadedFiles.length >= maxNewFiles
-                          ? 'Maximum files reached'
-                          : isEditMode
-                            ? `Add more images (${maxNewFiles} more allowed)`
-                            : 'Drop images here or click to upload'
-                      }}
+                      {{ uploadMessage }}
                     </p>
                     <p class="text-xs text-muted-foreground">
-                      {{ uploadedFiles.length }}/{{ maxNewFiles }} new images selected • Max 10MB
-                      per file
+                      {{ uploadedFiles.length }}/{{ maxNewFiles }} new images selected • Max
+                      {{ FILE_UPLOAD_CONFIG.MAX_FILE_SIZE_MB }}MB per file
                     </p>
                   </div>
                 </div>
@@ -163,40 +193,40 @@ const getFilePreview = (file: File) => URL.createObjectURL(file);
                 class="space-y-2"
               >
                 <p class="text-sm font-medium">
-                  Photos ({{ existingPhotos.length + uploadedFiles.length }})
+                  Photos: ({{ existingPhotos.length + uploadedFiles.length }})
                 </p>
                 <div class="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
                   <div
-                    v-for="(photo, index) in existingPhotos"
-                    :key="`existing-${index}`"
+                    v-for="photo in existingPhotos"
+                    :key="photo.id"
                     class="relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border border-border"
                   >
                     <img
-                      :src="photo"
-                      :alt="`Photo ${index + 1}`"
+                      :src="photo.url"
+                      :alt="photo.fileName"
                       class="w-full h-full object-cover"
                     />
                     <div
                       class="absolute top-1 right-1 cursor-pointer z-10 bg-destructive/80 hover:bg-destructive rounded-full p-0.5 transition-colors"
-                      @click="removePhoto(photo)"
+                      @click="removePhoto(photo.id)"
                     >
                       <X class="w-3 h-3 text-destructive-foreground" />
                     </div>
                   </div>
 
                   <div
-                    v-for="(file, index) in uploadedFiles"
-                    :key="`new-${index}`"
+                    v-for="file in uploadedFiles"
+                    :key="getFileId(file)"
                     class="relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border border-border"
                   >
                     <img
                       :src="getFilePreview(file)"
-                      :alt="`New photo ${existingPhotos.length + index + 1}`"
+                      :alt="file.name"
                       class="w-full h-full object-cover"
                     />
                     <div
                       class="absolute top-1 right-1 cursor-pointer z-10 bg-destructive/80 hover:bg-destructive rounded-full p-0.5 transition-colors"
-                      @click="removePhoto(index)"
+                      @click="removePhoto(getFileId(file))"
                     >
                       <X class="w-3 h-3 text-destructive-foreground" />
                     </div>
@@ -210,15 +240,7 @@ const getFilePreview = (file: File) => URL.createObjectURL(file);
       </FormField>
       <DialogFooter class="flex justify-end">
         <Button type="submit" :disabled="isLoading">
-          {{
-            isLoading
-              ? isEditMode
-                ? 'Updating...'
-                : 'Adding...'
-              : isEditMode
-                ? 'Update Landmark'
-                : 'Add Landmark'
-          }}
+          {{ submitButtonText }}
         </Button>
       </DialogFooter>
     </form>

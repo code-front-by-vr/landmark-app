@@ -9,7 +9,7 @@ import { Input, PasswordInput } from '@ui/input';
 import { Button } from '@ui/button';
 import { Spinner } from '@ui/spinner';
 
-const { isLoading, onSubmit } = useRegister();
+const { isPending: isLoading, onSubmit } = useRegister();
 </script>
 
 <template>

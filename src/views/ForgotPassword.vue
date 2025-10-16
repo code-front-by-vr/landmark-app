@@ -10,7 +10,7 @@ import { Button } from '@ui/button';
 import { Spinner } from '@ui/spinner';
 import { SuccessMessage } from '@/components/shared/ui/success-message';
 
-const { isLoading, isSuccess, onSubmit } = useForgotPassword();
+const { isPending: isLoading, isSuccess, onSubmit } = useForgotPassword();
 </script>
 
 <template>

@@ -10,35 +10,53 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
 
   const files = ref<File[]>([]);
   const fileInputRef = ref<HTMLInputElement | null>(null);
-  const fileCount = computed(() => files.value.length);
-  const canAddMore = computed(() => fileCount.value < maxFiles);
+  const fileIdMap = new Map<File, string>();
+
+  const canAddMore = computed(() => files.value.length < maxFiles);
+
+  function getFileId(file: File): string {
+    let id = fileIdMap.get(file);
+    if (!id) {
+      id = crypto.randomUUID();
+      fileIdMap.set(file, id);
+    }
+    return id;
+  }
+
+  function addFiles(newFiles: File[]) {
+    if (!newFiles.length) return;
+    if (!canAddMore.value) return;
+
+    const filesToAdd = newFiles.slice(0, maxFiles - files.value.length);
+    filesToAdd.forEach(file => fileIdMap.set(file, crypto.randomUUID()));
+
+    files.value.push(...filesToAdd);
+  }
 
   function handleFileSelect(e: Event) {
     const target = e.target as HTMLInputElement;
     const selected = Array.from(target.files || []);
-
-    if (!selected.length) return;
-    if (!canAddMore.value) return;
-
-    files.value.push(...selected.slice(0, maxFiles - fileCount.value));
+    addFiles(selected);
+    target.value = '';
   }
 
   function handleFileDrop(e: DragEvent) {
     e.preventDefault();
     const dropped = Array.from(e.dataTransfer?.files || []);
-
-    if (!dropped.length) return;
-    if (!canAddMore.value) return;
-
-    files.value.push(...dropped.slice(0, maxFiles - fileCount.value));
+    addFiles(dropped);
   }
 
-  function removeFile(index: number) {
-    files.value.splice(index, 1);
+  function removeFile(fileId: string) {
+    const fileToRemove = files.value.find(file => getFileId(file) === fileId);
+    if (fileToRemove) {
+      files.value = files.value.filter(file => file !== fileToRemove);
+      fileIdMap.delete(fileToRemove);
+    }
   }
 
   function clearFiles() {
     files.value = [];
+    fileIdMap.clear();
     if (fileInputRef.value) {
       fileInputRef.value.value = '';
     }
@@ -47,8 +65,8 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
   return {
     files,
     fileInputRef,
-    fileCount,
     canAddMore,
+    getFileId,
     handleFileSelect,
     handleFileDrop,
     removeFile,

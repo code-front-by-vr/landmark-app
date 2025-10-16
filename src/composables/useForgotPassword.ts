@@ -1,34 +1,31 @@
-import { ref } from 'vue';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/zod';
-import { forgotPasswordSchema } from '@/schemas/auth';
+import { forgotPasswordSchema, type ForgotPasswordFormData } from '@/schemas/auth';
+import { useMutation } from '@tanstack/vue-query';
+import { useAuthStore } from '@/stores/auth';
 
 export function useForgotPassword() {
+  const authStore = useAuthStore();
   const formSchema = toTypedSchema(forgotPasswordSchema);
 
   const form = useForm({
     validationSchema: formSchema,
   });
 
-  const isLoading = ref(false);
-  const isSuccess = ref(false);
-
-  const onSubmit = form.handleSubmit(async () => {
-    isLoading.value = true;
-    try {
-      // TODO: add password reset to firebase
-      isSuccess.value = true;
-    } catch (error) {
+  const mutation = useMutation({
+    mutationFn: (values: ForgotPasswordFormData) => authStore.forgotPassword(values),
+    onSuccess: () => {
+      form.resetForm();
+    },
+    onError: error => {
       console.error('Password reset error:', error);
-    } finally {
-      isLoading.value = false;
-    }
+    },
   });
+  const onSubmit = form.handleSubmit(values => mutation.mutate(values));
 
   return {
     form,
-    isLoading,
-    isSuccess,
+    ...mutation,
     onSubmit,
   };
 }

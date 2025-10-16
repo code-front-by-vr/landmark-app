@@ -9,7 +9,7 @@ import { Input, PasswordInput } from '@ui/input';
 import { Button } from '@ui/button';
 import { Spinner } from '@ui/spinner';
 
-const { isLoading, onSubmit } = useSignIn();
+const { isPending: isLoading, onSubmit } = useSignIn();
 </script>
 
 <template>

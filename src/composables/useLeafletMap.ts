@@ -10,6 +10,12 @@ interface UseLeafletMapOptions {
   autoInit?: boolean;
 }
 
+export interface MapInitResult {
+  success: boolean;
+  error?: string;
+  message?: string;
+}
+
 interface UseLeafletMapReturn {
   map: Ref<L.Map | null>;
   marker: Ref<L.Marker | null>;
@@ -18,7 +24,7 @@ interface UseLeafletMapReturn {
   removeMarker: () => void;
 
   setView: (center: L.LatLngExpression) => void;
-  initializeMap: () => Promise<boolean>;
+  initializeMap: () => Promise<MapInitResult>;
 }
 
 export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapReturn {
@@ -46,16 +52,27 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     map.value?.setView(newCenter, MAP_CONFIG.DEFAULT_ZOOM);
   }
 
-  async function initializeMap(): Promise<boolean> {
+  async function initializeMap(): Promise<MapInitResult> {
+    await import('leaflet/dist/leaflet.css');
+
     const container = document.getElementById(containerId);
     if (!container) {
-      console.error(`Container with id "${containerId}" not found in DOM`);
-      return false;
+      const errorMsg = `Container with id "${containerId}" not found in DOM`;
+      console.error(errorMsg);
+      return {
+        success: false,
+        error: 'CONTAINER_NOT_FOUND',
+        message: errorMsg,
+      };
     }
 
     if (map.value) {
-      console.warn('Map already initialized');
-      return true;
+      const message = 'Map already initialized';
+      console.warn(message);
+      return {
+        success: true,
+        message,
+      };
     }
 
     try {
@@ -79,10 +96,18 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
 
       isReady.value = true;
 
-      return true;
+      return {
+        success: true,
+        message: 'Map initialized successfully',
+      };
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
       console.error('Error initializing map:', error);
-      return false;
+      return {
+        success: false,
+        error: 'INITIALIZATION_ERROR',
+        message: errorMsg,
+      };
     }
   }
 

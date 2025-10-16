@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { VALIDATION_MESSAGES } from '@/config/constants';
 
-const emailSchema = z.string().email({ message: VALIDATION_MESSAGES.EMAIL_INVALID });
+const emailSchema = z.string().email(VALIDATION_MESSAGES.EMAIL_INVALID);
 
 const passwordSchema = z
   .string()

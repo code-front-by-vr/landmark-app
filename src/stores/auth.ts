@@ -1,8 +1,8 @@
-import type { SignInFormData } from '@/schemas/auth';
+import type { ForgotPasswordFormData, SignInFormData } from '@/schemas/auth';
 import { type User } from '@/api/firebase';
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
-import { loginUserService, logoutUserService, registerUserService } from '@/services/auth';
+import * as authService from '@/services/auth';
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null);
@@ -19,7 +19,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function register({ email, password }: SignInFormData) {
     try {
-      const registeredUser = await registerUserService({ email, password });
+      const registeredUser = await authService.registerUser({ email, password });
       user.value = registeredUser;
       return registeredUser;
     } catch (error) {
@@ -30,7 +30,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function login({ email, password }: SignInFormData) {
     try {
-      const loggedInUser = await loginUserService({ email, password });
+      const loggedInUser = await authService.loginUser({ email, password });
       user.value = loggedInUser;
       return loggedInUser;
     } catch (error) {
@@ -41,13 +41,21 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function logout() {
     try {
-      await logoutUserService();
+      await authService.logoutUser();
       user.value = null;
     } catch (error) {
       console.error('Logout failed:', error);
       throw error;
     }
   }
+  async function forgotPassword({ email }: ForgotPasswordFormData) {
+    try {
+      await authService.forgotPassword({ email });
+    } catch (error) {
+      console.error('Forgot password failed:', error);
+      throw error;
+    }
+  }
 
-  return { user, isAuthenticated, register, login, logout, setUser, clearUser };
+  return { user, isAuthenticated, register, login, logout, forgotPassword, setUser, clearUser };
 });

@@ -10,7 +10,7 @@ import {
   DialogPortal,
   useForwardPropsEmits,
 } from 'reka-ui';
-import { cn } from '@/lib/tailwind';
+import { cn } from '@/lib';
 
 const props = defineProps<DialogContentProps & { class?: HTMLAttributes['class'] }>();
 const emits = defineEmits<DialogContentEmits>();

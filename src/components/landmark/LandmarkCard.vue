@@ -2,10 +2,9 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@ui/card';
 import { Star } from 'lucide-vue-next';
 import { useRouter } from 'vue-router';
+import { RATING_CONFIG } from '@/config/constants';
 
-const MAX_RATING_STARS = 5;
-
-export interface LandmarkCardProps {
+interface LandmarkCardProps {
   id: string;
   title: string;
   description: string;
@@ -33,7 +32,7 @@ const handleClick = () => {
     <CardContent class="flex justify-between items-center">
       <div class="flex items-center gap-1.5">
         <Star
-          v-for="star in MAX_RATING_STARS"
+          v-for="star in RATING_CONFIG.MAX"
           :key="star"
           :class="[
             'w-4 h-4',

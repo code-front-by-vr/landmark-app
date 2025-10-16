@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue';
 import { Loader2Icon } from 'lucide-vue-next';
-import { cn } from '@/lib/tailwind';
+import { cn } from '@/lib';
 
 const props = defineProps<{
   class?: HTMLAttributes['class'];

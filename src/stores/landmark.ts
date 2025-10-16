@@ -1,24 +1,23 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import type { Landmark, NewLandmarkInput } from '@/types/landmark';
 import type { Rating } from '@/config/constants';
-import {
-  getLandmarksService,
-  addLandmarkService,
-  rateLandmarkService,
-  deleteLandmarkService,
-  updateLandmarkService,
-  getUserLandmarksService,
-} from '@/services/landmark';
+import * as landmarkService from '@/services/landmark';
 
 export const useLandmarkStore = defineStore('landmark', () => {
   const landmarks = ref<Landmark[]>([]);
+  const isLoading = ref(false);
+  const error = ref<string | null>(null);
+
+  const landmarkByIdMap = computed<Map<string, Landmark>>(() => {
+    return new Map(landmarks.value.map(landmark => [landmark.id, landmark]));
+  });
 
   function getLandmarkById(id: string) {
-    return landmarks.value.find(l => l.id === id);
+    return landmarkByIdMap.value.get(id);
   }
 
-  function isOwner(landmarkId: string, userId: string) {
+  function checkUserIsOwner(landmarkId: string, userId: string) {
     const landmark = getLandmarkById(landmarkId);
     return landmark?.createdBy === userId;
   }
@@ -35,47 +34,103 @@ export const useLandmarkStore = defineStore('landmark', () => {
   }
 
   async function fetchLandmarks() {
-    landmarks.value = await getLandmarksService();
+    try {
+      isLoading.value = true;
+      error.value = null;
+      landmarks.value = await landmarkService.getLandmarks();
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to fetch landmarks';
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   async function fetchUserLandmarks(userId: string) {
-    landmarks.value = await getUserLandmarksService(userId);
+    try {
+      isLoading.value = true;
+      error.value = null;
+      landmarks.value = await landmarkService.getUserLandmarks(userId);
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to fetch user landmarks';
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   async function createLandmark(landmark: NewLandmarkInput, files: File[]) {
-    const createdLandmark = await addLandmarkService(landmark, files);
-    addLandmarkToStore(createdLandmark);
+    try {
+      isLoading.value = true;
+      error.value = null;
+      const createdLandmark = await landmarkService.addLandmark(landmark, files);
+      addLandmarkToStore(createdLandmark);
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to create landmark';
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   async function updateLandmark(
     landmarkId: string,
     landmark: NewLandmarkInput,
     files: File[],
-    photosToDelete: string[] = []
+    photoIdsToDelete: string[] = []
   ) {
-    const updatedLandmark = await updateLandmarkService(
-      landmarkId,
-      landmark,
-      files,
-      photosToDelete
-    );
-    landmarks.value = landmarks.value.map(l => (l.id === landmarkId ? updatedLandmark : l));
+    try {
+      isLoading.value = true;
+      error.value = null;
+      const updatedLandmark = await landmarkService.updateLandmark(
+        landmarkId,
+        landmark,
+        files,
+        photoIdsToDelete
+      );
+      landmarks.value = landmarks.value.map(l => (l.id === landmarkId ? updatedLandmark : l));
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to update landmark';
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   async function rateLandmark(landmarkId: string, userId: string, rating: Rating) {
-    const updatedLandmark = await rateLandmarkService(landmarkId, userId, rating);
-    landmarks.value = landmarks.value.map(l => (l.id === landmarkId ? updatedLandmark : l));
+    try {
+      isLoading.value = true;
+      error.value = null;
+      const updatedLandmark = await landmarkService.rateLandmark(landmarkId, userId, rating);
+      landmarks.value = landmarks.value.map(l => (l.id === landmarkId ? updatedLandmark : l));
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to rate landmark';
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   async function deleteLandmark(landmarkId: string) {
-    await deleteLandmarkService(landmarkId);
-    landmarks.value = landmarks.value.filter(l => l.id !== landmarkId);
+    try {
+      isLoading.value = true;
+      error.value = null;
+      await landmarkService.deleteLandmark(landmarkId);
+      landmarks.value = landmarks.value.filter(l => l.id !== landmarkId);
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to delete landmark';
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   return {
     landmarks,
+    isLoading,
+    error,
     getLandmarkById,
-    isOwner,
+    checkUserIsOwner,
     getUserRating,
     fetchLandmarks,
     fetchUserLandmarks,

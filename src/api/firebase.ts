@@ -4,6 +4,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
+  sendPasswordResetEmail,
   onAuthStateChanged,
   type User,
 } from 'firebase/auth';
@@ -47,6 +48,7 @@ export {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
+  sendPasswordResetEmail,
   onAuthStateChanged,
   type User,
   addDoc,

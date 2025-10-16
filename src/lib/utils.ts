@@ -1,7 +1,7 @@
 import { RATING_CONFIG } from '@/config/constants';
 
-export function calculateRatingStats(usersRatings: Record<string, number>) {
-  const ratings = Object.values(usersRatings || {});
+export function calculateRatingStats(usersRatings: Record<string, number> = {}) {
+  const ratings = Object.values(usersRatings);
   const visitsCount = ratings.length;
 
   if (visitsCount === 0) return { rating: 0, visits: 0 };

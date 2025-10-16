@@ -1,9 +1,9 @@
-import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/zod';
-import { registerSchema } from '@/schemas/auth';
+import { registerSchema, type RegisterFormData } from '@/schemas/auth';
 import { useAuthStore } from '@/stores/auth';
+import { useMutation } from '@tanstack/vue-query';
 
 export function useRegister() {
   const router = useRouter();
@@ -15,25 +15,22 @@ export function useRegister() {
     validationSchema: formSchema,
   });
 
-  const isLoading = ref(false);
-
-  const onSubmit = form.handleSubmit(async ({ email, password }, { resetForm }) => {
-    isLoading.value = true;
-
-    try {
-      await authStore.register({ email, password });
-      resetForm();
+  const mutation = useMutation({
+    mutationFn: (values: RegisterFormData) => authStore.register(values),
+    onSuccess: () => {
+      form.resetForm();
       router.push('/');
-    } catch (error) {
+    },
+    onError: error => {
       console.error('Register error:', error);
-    } finally {
-      isLoading.value = false;
-    }
+    },
   });
+
+  const onSubmit = form.handleSubmit(values => mutation.mutate(values));
 
   return {
     form,
-    isLoading,
+    ...mutation,
     onSubmit,
   };
 }
