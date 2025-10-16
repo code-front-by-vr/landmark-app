@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useLandmarkStore } from '@/stores/landmark';
 import type { NewLandmarkInput } from '@/types/landmark';
 import type { Rating } from '@/config/constants';
+import { toast } from 'vue-sonner';
 
 interface UseLandmarkModalOptions {
   landmarkId?: string;
@@ -106,15 +107,22 @@ export function useLandmarkModal({
 
     try {
       if (!marker.value) {
-        throw new Error('Please select a location on the map');
+        toast.error('Error', {
+          description: 'Please select a location on the map',
+        });
+        return;
       }
 
       if (!authStore.user) {
-        throw new Error('User not authenticated');
+        toast.error('Authentication Error', { description: 'User not authenticated' });
+        return;
       }
 
       if (!isEditMode.value && uploadedFiles.value.length === 0) {
         form.setFieldError('photos', 'Please upload at least one photo');
+        toast.error('Error', {
+          description: 'Please upload at least one photo',
+        });
         return;
       }
 
@@ -151,8 +159,10 @@ export function useLandmarkModal({
       clearFiles();
 
       onClose();
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'An error occurred';
+    } catch {
+      toast.error(isEditMode.value ? 'Update Error' : 'Create Error', {
+        description: `An error occurred: ${error.value}`,
+      });
     } finally {
       isLoading.value = false;
     }

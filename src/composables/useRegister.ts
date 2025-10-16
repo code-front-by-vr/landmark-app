@@ -4,6 +4,7 @@ import { toTypedSchema } from '@vee-validate/zod';
 import { registerSchema, type RegisterFormData } from '@/schemas/auth';
 import { useAuthStore } from '@/stores/auth';
 import { useMutation } from '@tanstack/vue-query';
+import { toast } from 'vue-sonner';
 
 export function useRegister() {
   const router = useRouter();
@@ -19,10 +20,13 @@ export function useRegister() {
     mutationFn: (values: RegisterFormData) => authStore.register(values),
     onSuccess: () => {
       form.resetForm();
+      toast.success('Registration Successful', {
+        description: 'Your account has been created. You can now sign in.',
+      });
       router.push('/');
     },
-    onError: error => {
-      console.error('Register error:', error);
+    onError: () => {
+      toast.error('Registration Error', { description: 'Failed to register' });
     },
   });
 
