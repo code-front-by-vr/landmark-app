@@ -19,10 +19,14 @@ import {
   deleteDoc,
   listAll,
   deleteObject,
+  type QueryDocumentSnapshot,
+  type DocumentData,
+  startAfter,
 } from '@/api/firebase';
 import type { Landmark, NewLandmarkInput, Photo } from '@/types/landmark';
 import { calculateRatingStats } from '@/lib';
 import { LANDMARK_CONFIG, FILE_UPLOAD_CONFIG, type Rating } from '@/config/constants';
+import type { Query } from 'firebase/firestore';
 
 const landmarkCollection = collection(db, 'landmarks');
 
@@ -83,6 +87,46 @@ export async function getUserLandmarks(
   const snapshot = await getDocs(q);
 
   return snapshot.docs.map<Landmark>(doc => ({ id: doc.id, ...doc.data() }) as Landmark);
+}
+
+export async function getPaginatedLandmarks(
+  lastDoc: QueryDocumentSnapshot<DocumentData> | null = null,
+  maxCount: number = LANDMARK_CONFIG.DEFAULT_LIMIT,
+  onlyMy?: boolean,
+  userId?: string
+) {
+  let q: Query<DocumentData, DocumentData> = query(
+    landmarkCollection,
+    orderBy('rating', 'desc'),
+    limit(maxCount)
+  );
+
+  if (onlyMy && userId) {
+    q = query(
+      landmarkCollection,
+      where('createdBy', '==', userId),
+      orderBy('rating', 'desc'),
+      limit(maxCount)
+    );
+  }
+
+  if (lastDoc) {
+    q = query(q, startAfter(lastDoc));
+  }
+
+  const snapshot = await getDocs(q);
+  const landmarks: Landmark[] = snapshot.docs.map(
+    doc => ({ id: doc.id, ...doc.data() }) as Landmark
+  );
+  const newLastDoc = snapshot.docs[snapshot.docs.length - 1] ?? null;
+
+  const hasMore = snapshot.docs.length === maxCount;
+
+  return {
+    landmarks,
+    lastDoc: newLastDoc,
+    hasMore,
+  };
 }
 
 export async function addLandmark(landmark: NewLandmarkInput, files: File[]): Promise<Landmark> {

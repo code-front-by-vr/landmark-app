@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { Plus, MapPinned } from 'lucide-vue-next';
 import leaflet, { type Marker } from 'leaflet';
@@ -7,24 +7,23 @@ import { Button } from '@ui/button';
 import { Dialog, DialogTrigger } from '@ui/dialog';
 import DialogScrollContent from '@ui/dialog/DialogScrollContent.vue';
 import LandmarkModal from '@/components/landmark/LandmarkModal.vue';
-import LandmarkCard from '@/components/landmark/LandmarkCard.vue';
+import LandmarkList from '@/components/landmark/LandmarkList.vue';
 import { useLandmarkStore } from '@/stores/landmark';
-import { useAuthStore } from '@/stores/auth';
 import { useLeafletMap } from '@/composables/useLeafletMap';
 import { MAP_CONFIG } from '@/config/constants';
 
 const router = useRouter();
 const isDialogOpen = ref(false);
-const showOnlyMyLandmarks = ref(false);
 const markers = ref<Marker[]>([]);
 
 const landmarkStore = useLandmarkStore();
-const authStore = useAuthStore();
 
 const { map } = useLeafletMap({
   containerId: 'map',
   center: [...MAP_CONFIG.DEFAULT_CENTER],
 });
+
+const displayedLandmarks = computed(() => landmarkStore.landmarks);
 
 const updateMapMarkers = () => {
   if (!map.value) return;
@@ -32,7 +31,7 @@ const updateMapMarkers = () => {
   markers.value.forEach(marker => marker.remove());
   markers.value = [];
 
-  landmarkStore.landmarks.forEach(landmark => {
+  displayedLandmarks.value.forEach(landmark => {
     const marker = leaflet
       .marker([landmark.location.lat, landmark.location.lng])
       .addTo(map.value!)
@@ -47,23 +46,15 @@ const updateMapMarkers = () => {
 };
 
 async function toggleMyLandmarks() {
-  showOnlyMyLandmarks.value = !showOnlyMyLandmarks.value;
-
-  if (showOnlyMyLandmarks.value && authStore.user) {
-    await landmarkStore.fetchUserLandmarks(authStore.user.uid);
-  } else {
-    await landmarkStore.fetchLandmarks();
-  }
-
-  updateMapMarkers();
+  await landmarkStore.toggleMyLandmarks();
 }
 
 onMounted(async () => {
-  await landmarkStore.fetchLandmarks();
   updateMapMarkers();
 });
 
-watch(() => landmarkStore.landmarks, updateMapMarkers, { deep: true });
+watch(() => displayedLandmarks.value, updateMapMarkers, { deep: true });
+watch(map, updateMapMarkers);
 </script>
 
 <template>
@@ -91,26 +82,16 @@ watch(() => landmarkStore.landmarks, updateMapMarkers, { deep: true });
         <div class="flex items-center justify-between mb-3">
           <h2 class="text-xl font-semibold flex items-center gap-2">
             <MapPinned class="w-5 h-5 text-primary" />
-            Top Landmarks
+            {{ landmarkStore.showOnlyMyLandmarks ? 'My Landmarks' : 'Top Landmarks' }}
           </h2>
         </div>
 
         <Button variant="outline" size="sm" class="w-full" @click="toggleMyLandmarks">
-          {{ showOnlyMyLandmarks ? 'Show All Landmarks' : 'Show Only My Landmarks' }}
+          {{ landmarkStore.showOnlyMyLandmarks ? 'Show All Landmarks' : 'Show Only My Landmarks' }}
         </Button>
       </div>
 
-      <div class="flex-1 overflow-y-auto p-4 space-y-3">
-        <LandmarkCard
-          v-for="landmark in landmarkStore.landmarks"
-          :key="landmark.id"
-          :id="landmark.id"
-          :title="landmark.title"
-          :description="landmark.description"
-          :rating="landmark.rating"
-          :visits="landmark.visits"
-        />
-      </div>
+      <LandmarkList :landmarks="displayedLandmarks" />
     </div>
   </div>
 </template>

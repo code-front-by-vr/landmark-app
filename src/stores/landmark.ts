@@ -2,12 +2,44 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { Landmark, NewLandmarkInput } from '@/types/landmark';
 import type { Rating } from '@/config/constants';
-import * as landmarkService from '@/services/landmark';
+import {
+  useLandmarksQueries,
+  useLandmarkMutation,
+  useUserLandmarksQueries,
+} from '@/composables/useLandmarkQueries';
+import { useAuthStore } from './auth';
 
 export const useLandmarkStore = defineStore('landmark', () => {
-  const landmarks = ref<Landmark[]>([]);
+  const selectedLandmarkId = ref<string | null>(null);
   const isLoading = ref(false);
   const error = ref<string | null>(null);
+  const showOnlyMyLandmarks = ref(false);
+
+  const authStore = useAuthStore();
+
+  const landmarksQueries = useLandmarksQueries();
+  const userLandmarksQueries = useUserLandmarksQueries(authStore.user?.uid ?? '');
+  const landmarksMutations = useLandmarkMutation();
+
+  const allLandmarks = computed<Landmark[]>(() => {
+    if (!landmarksQueries.data?.value?.pages.length) return [];
+
+    return landmarksQueries.data.value.pages.flatMap(page => page.landmarks);
+  });
+
+  const userLandmarks = computed<Landmark[]>(() => {
+    if (!userLandmarksQueries.data?.value?.pages.length) return [];
+
+    return userLandmarksQueries.data.value.pages.flatMap(page => page.landmarks);
+  });
+
+  const landmarks = computed(() => {
+    return showOnlyMyLandmarks.value ? userLandmarks.value : allLandmarks.value;
+  });
+
+  const activeQuery = computed(() => {
+    return showOnlyMyLandmarks.value ? userLandmarksQueries : landmarksQueries;
+  });
 
   const landmarkByIdMap = computed<Map<string, Landmark>>(() => {
     return new Map(landmarks.value.map(landmark => [landmark.id, landmark]));
@@ -29,33 +61,23 @@ export const useLandmarkStore = defineStore('landmark', () => {
     return landmark.userRatings[userId] || null;
   }
 
-  function addLandmarkToStore(newLandmark: Landmark) {
-    landmarks.value.push(newLandmark);
-  }
+  async function toggleMyLandmarks() {
+    if (!authStore.user?.uid) return;
 
-  async function fetchLandmarks() {
-    try {
-      isLoading.value = true;
-      error.value = null;
-      landmarks.value = await landmarkService.getLandmarks();
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to fetch landmarks';
-      throw err;
-    } finally {
-      isLoading.value = false;
-    }
-  }
+    showOnlyMyLandmarks.value = !showOnlyMyLandmarks.value;
 
-  async function fetchUserLandmarks(userId: string) {
-    try {
-      isLoading.value = true;
-      error.value = null;
-      landmarks.value = await landmarkService.getUserLandmarks(userId);
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to fetch user landmarks';
-      throw err;
-    } finally {
-      isLoading.value = false;
+    if (showOnlyMyLandmarks.value && !userLandmarksQueries.data.value) {
+      try {
+        isLoading.value = true;
+        error.value = null;
+        await userLandmarksQueries.refetch();
+      } catch (err) {
+        error.value = err instanceof Error ? err.message : 'Failed to fetch user landmarks';
+        //TODO: consider to replace with toast notification
+        throw err;
+      } finally {
+        isLoading.value = false;
+      }
     }
   }
 
@@ -63,10 +85,10 @@ export const useLandmarkStore = defineStore('landmark', () => {
     try {
       isLoading.value = true;
       error.value = null;
-      const createdLandmark = await landmarkService.addLandmark(landmark, files);
-      addLandmarkToStore(createdLandmark);
+      await landmarksMutations.createMutation.mutateAsync({ landmark, files });
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to create landmark';
+      //TODO: consider to replace with toast notification
       throw err;
     } finally {
       isLoading.value = false;
@@ -82,15 +104,16 @@ export const useLandmarkStore = defineStore('landmark', () => {
     try {
       isLoading.value = true;
       error.value = null;
-      const updatedLandmark = await landmarkService.updateLandmark(
+
+      await landmarksMutations.updateMutation.mutateAsync({
         landmarkId,
         landmark,
         files,
-        photoIdsToDelete
-      );
-      landmarks.value = landmarks.value.map(l => (l.id === landmarkId ? updatedLandmark : l));
+        photoIdsToDelete,
+      });
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to update landmark';
+      // TODO: consider to replace with toast notification
       throw err;
     } finally {
       isLoading.value = false;
@@ -101,10 +124,10 @@ export const useLandmarkStore = defineStore('landmark', () => {
     try {
       isLoading.value = true;
       error.value = null;
-      const updatedLandmark = await landmarkService.rateLandmark(landmarkId, userId, rating);
-      landmarks.value = landmarks.value.map(l => (l.id === landmarkId ? updatedLandmark : l));
+      await landmarksMutations.rateMutation.mutateAsync({ landmarkId, userId, rating });
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to rate landmark';
+      //TODO: consider to replace with toast notification
       throw err;
     } finally {
       isLoading.value = false;
@@ -115,28 +138,39 @@ export const useLandmarkStore = defineStore('landmark', () => {
     try {
       isLoading.value = true;
       error.value = null;
-      await landmarkService.deleteLandmark(landmarkId);
-      landmarks.value = landmarks.value.filter(l => l.id !== landmarkId);
+      await landmarksMutations.deleteMutation.mutateAsync(landmarkId);
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to delete landmark';
+      //TODO: consider to replace with toast notification
       throw err;
     } finally {
       isLoading.value = false;
     }
   }
 
+  async function loadMoreLandmarks() {
+    if (activeQuery.value.hasNextPage.value && !activeQuery.value.isFetchingNextPage.value) {
+      await activeQuery.value.fetchNextPage();
+    }
+  }
+
   return {
-    landmarks,
     isLoading,
     error,
+    selectedLandmarkId,
+    showOnlyMyLandmarks,
+
+    landmarks,
+
     getLandmarkById,
     checkUserIsOwner,
     getUserRating,
-    fetchLandmarks,
-    fetchUserLandmarks,
+
     createLandmark,
     updateLandmark,
     rateLandmark,
     deleteLandmark,
+    toggleMyLandmarks,
+    loadMoreLandmarks,
   };
 });

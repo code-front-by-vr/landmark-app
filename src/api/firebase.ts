@@ -24,6 +24,9 @@ import {
   where,
   runTransaction,
   type Transaction,
+  startAfter,
+  type QueryDocumentSnapshot,
+  type DocumentData,
 } from 'firebase/firestore';
 import {
   getStorage,
@@ -70,4 +73,7 @@ export {
   where,
   runTransaction,
   type Transaction,
+  startAfter,
+  type QueryDocumentSnapshot,
+  type DocumentData,
 };
