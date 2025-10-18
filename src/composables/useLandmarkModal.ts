@@ -138,12 +138,12 @@ export function useLandmarkModal({
       };
 
       if (isEditMode.value && landmark.value) {
-        await landmarkStore.updateLandmark(
-          landmark.value.id,
-          landmarkData,
-          uploadedFiles.value,
-          photoIdsToDelete.value
-        );
+        await landmarkStore.updateLandmark({
+          landmarkId: landmark.value.id,
+          landmark: landmarkData,
+          files: uploadedFiles.value,
+          photoIdsToDelete: photoIdsToDelete.value,
+        });
 
         if (values.userRating) {
           await landmarkStore.rateLandmark(

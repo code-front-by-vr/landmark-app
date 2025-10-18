@@ -1,12 +1,17 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { Landmark, NewLandmarkInput } from '@/types/landmark';
+import { toast } from 'vue-sonner';
+import type { Landmark, NewLandmarkInput, MapBounds, UpdateLandmarkInput } from '@/types/landmark';
 import type { Rating } from '@/config/constants';
 import {
   useLandmarksQueries,
   useLandmarkMutation,
   useUserLandmarksQueries,
 } from '@/composables/useLandmarkQueries';
+import {
+  useMapLandmarksQuery,
+  useUserMapLandmarksQuery,
+} from '@/composables/useMapLandmarksQueries';
 import { useAuthStore } from './auth';
 
 export const useLandmarkStore = defineStore('landmark', () => {
@@ -14,31 +19,34 @@ export const useLandmarkStore = defineStore('landmark', () => {
   const isLoading = ref(false);
   const error = ref<string | null>(null);
   const showOnlyMyLandmarks = ref(false);
+  const mapBounds = ref<MapBounds | null>(null);
 
   const authStore = useAuthStore();
 
   const landmarksQueries = useLandmarksQueries();
   const userLandmarksQueries = useUserLandmarksQueries(authStore.user?.uid ?? '');
   const landmarksMutations = useLandmarkMutation();
+  const mapLandmarksQuery = useMapLandmarksQuery(mapBounds);
+  const userMapLandmarksQuery = useUserMapLandmarksQuery(mapBounds, authStore.user?.uid ?? '');
 
-  const allLandmarks = computed<Landmark[]>(() => {
-    if (!landmarksQueries.data?.value?.pages.length) return [];
-
-    return landmarksQueries.data.value.pages.flatMap(page => page.landmarks);
+  const activeQuery = computed(() => {
+    return showOnlyMyLandmarks.value ? userLandmarksQueries : landmarksQueries;
   });
-
+  const activeMapQuery = computed(() => {
+    return showOnlyMyLandmarks.value ? userMapLandmarksQuery : mapLandmarksQuery;
+  });
+  const allLandmarks = computed<Landmark[]>(() => {
+    return landmarksQueries.data?.value?.pages.flatMap(page => page.landmarks) ?? [];
+  });
   const userLandmarks = computed<Landmark[]>(() => {
-    if (!userLandmarksQueries.data?.value?.pages.length) return [];
-
-    return userLandmarksQueries.data.value.pages.flatMap(page => page.landmarks);
+    return userLandmarksQueries.data?.value?.pages.flatMap(page => page.landmarks) ?? [];
   });
 
   const landmarks = computed(() => {
     return showOnlyMyLandmarks.value ? userLandmarks.value : allLandmarks.value;
   });
-
-  const activeQuery = computed(() => {
-    return showOnlyMyLandmarks.value ? userLandmarksQueries : landmarksQueries;
+  const mapLandmarks = computed(() => {
+    return activeMapQuery.value.data?.value ?? [];
   });
 
   const landmarkByIdMap = computed<Map<string, Landmark>>(() => {
@@ -50,8 +58,7 @@ export const useLandmarkStore = defineStore('landmark', () => {
   }
 
   function checkUserIsOwner(landmarkId: string, userId: string) {
-    const landmark = getLandmarkById(landmarkId);
-    return landmark?.createdBy === userId;
+    return getLandmarkById(landmarkId)?.createdBy === userId;
   }
 
   function getUserRating(landmarkId: string, userId: string) {
@@ -59,6 +66,16 @@ export const useLandmarkStore = defineStore('landmark', () => {
     if (!landmark || !landmark.userRatings) return null;
 
     return landmark.userRatings[userId] || null;
+  }
+
+  function setMapBounds(bounds: MapBounds) {
+    mapBounds.value = bounds;
+  }
+
+  async function loadMoreLandmarks() {
+    if (activeQuery.value.hasNextPage.value && !activeQuery.value.isFetchingNextPage.value) {
+      await activeQuery.value.fetchNextPage();
+    }
   }
 
   async function toggleMyLandmarks() {
@@ -72,8 +89,11 @@ export const useLandmarkStore = defineStore('landmark', () => {
         error.value = null;
         await userLandmarksQueries.refetch();
       } catch (err) {
-        error.value = err instanceof Error ? err.message : 'Failed to fetch user landmarks';
-        //TODO: consider to replace with toast notification
+        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch user landmarks';
+        error.value = errorMessage;
+        toast.error('Error Loading Landmarks', {
+          description: errorMessage,
+        });
         throw err;
       } finally {
         isLoading.value = false;
@@ -87,20 +107,23 @@ export const useLandmarkStore = defineStore('landmark', () => {
       error.value = null;
       await landmarksMutations.createMutation.mutateAsync({ landmark, files });
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to create landmark';
-      //TODO: consider to replace with toast notification
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create landmark';
+      error.value = errorMessage;
+      toast.error('Error Creating Landmark', {
+        description: errorMessage,
+      });
       throw err;
     } finally {
       isLoading.value = false;
     }
   }
 
-  async function updateLandmark(
-    landmarkId: string,
-    landmark: NewLandmarkInput,
-    files: File[],
-    photoIdsToDelete: string[] = []
-  ) {
+  async function updateLandmark({
+    landmarkId,
+    landmark,
+    files,
+    photoIdsToDelete,
+  }: UpdateLandmarkInput) {
     try {
       isLoading.value = true;
       error.value = null;
@@ -112,8 +135,11 @@ export const useLandmarkStore = defineStore('landmark', () => {
         photoIdsToDelete,
       });
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to update landmark';
-      // TODO: consider to replace with toast notification
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update landmark';
+      error.value = errorMessage;
+      toast.error('Error Updating Landmark', {
+        description: errorMessage,
+      });
       throw err;
     } finally {
       isLoading.value = false;
@@ -126,8 +152,11 @@ export const useLandmarkStore = defineStore('landmark', () => {
       error.value = null;
       await landmarksMutations.rateMutation.mutateAsync({ landmarkId, userId, rating });
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to rate landmark';
-      //TODO: consider to replace with toast notification
+      const errorMessage = err instanceof Error ? err.message : 'Failed to rate landmark';
+      error.value = errorMessage;
+      toast.error('Error Rating Landmark', {
+        description: errorMessage,
+      });
       throw err;
     } finally {
       isLoading.value = false;
@@ -140,17 +169,14 @@ export const useLandmarkStore = defineStore('landmark', () => {
       error.value = null;
       await landmarksMutations.deleteMutation.mutateAsync(landmarkId);
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to delete landmark';
-      //TODO: consider to replace with toast notification
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete landmark';
+      error.value = errorMessage;
+      toast.error('Error Deleting Landmark', {
+        description: errorMessage,
+      });
       throw err;
     } finally {
       isLoading.value = false;
-    }
-  }
-
-  async function loadMoreLandmarks() {
-    if (activeQuery.value.hasNextPage.value && !activeQuery.value.isFetchingNextPage.value) {
-      await activeQuery.value.fetchNextPage();
     }
   }
 
@@ -161,6 +187,9 @@ export const useLandmarkStore = defineStore('landmark', () => {
     showOnlyMyLandmarks,
 
     landmarks,
+
+    mapLandmarks,
+    setMapBounds,
 
     getLandmarkById,
     checkUserIsOwner,

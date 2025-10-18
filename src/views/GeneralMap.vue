@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from 'vue';
+import { ref, watch, computed, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { Plus, MapPinned } from 'lucide-vue-next';
 import leaflet, { type Marker } from 'leaflet';
@@ -18,11 +18,23 @@ const markers = ref<Marker[]>([]);
 
 const landmarkStore = useLandmarkStore();
 
-const { map } = useLeafletMap({
+const { map, bounds, isInteracting } = useLeafletMap({
   containerId: 'map',
   center: [...MAP_CONFIG.DEFAULT_CENTER],
 });
 
+const normalizedBounds = computed(() => {
+  if (!bounds.value) return null;
+
+  return {
+    north: bounds.value.getNorth(),
+    south: bounds.value.getSouth(),
+    east: bounds.value.getEast(),
+    west: bounds.value.getWest(),
+  };
+});
+
+const mapLandmarks = computed(() => landmarkStore.mapLandmarks);
 const displayedLandmarks = computed(() => landmarkStore.landmarks);
 
 const updateMapMarkers = () => {
@@ -31,11 +43,17 @@ const updateMapMarkers = () => {
   markers.value.forEach(marker => marker.remove());
   markers.value = [];
 
-  displayedLandmarks.value.forEach(landmark => {
+  mapLandmarks.value.forEach(landmark => {
     const marker = leaflet
       .marker([landmark.location.lat, landmark.location.lng])
       .addTo(map.value!)
-      .bindPopup(landmark.title);
+      .bindTooltip(landmark.title, {
+        direction: 'top',
+        offset: [0, -10],
+        opacity: 0.9,
+        permanent: false,
+        className: 'custom-tooltip',
+      });
 
     marker.on('click', () => {
       router.push(`/landmark/${landmark.id}`);
@@ -49,12 +67,36 @@ async function toggleMyLandmarks() {
   await landmarkStore.toggleMyLandmarks();
 }
 
-onMounted(async () => {
+watch(
+  normalizedBounds,
+  newBounds => {
+    if (newBounds && !isInteracting.value) {
+      landmarkStore.setMapBounds(newBounds);
+    }
+  },
+  { immediate: true }
+);
+
+watch(isInteracting, interacting => {
+  if (!interacting && normalizedBounds.value) {
+    landmarkStore.setMapBounds(normalizedBounds.value);
+  }
+});
+
+watch(map, newMap => {
+  if (newMap && normalizedBounds.value) {
+    landmarkStore.setMapBounds(normalizedBounds.value);
+  }
+});
+
+watch([mapLandmarks, map], () => {
   updateMapMarkers();
 });
 
-watch(() => displayedLandmarks.value, updateMapMarkers, { deep: true });
-watch(map, updateMapMarkers);
+onUnmounted(() => {
+  markers.value.forEach(marker => marker.remove());
+  markers.value = [];
+});
 </script>
 
 <template>
@@ -95,3 +137,16 @@ watch(map, updateMapMarkers);
     </div>
   </div>
 </template>
+
+<style scoped>
+.custom-tooltip {
+  background: rgba(0, 0, 0, 0.8);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+</style>

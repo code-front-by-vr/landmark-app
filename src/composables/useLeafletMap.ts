@@ -20,6 +20,9 @@ interface UseLeafletMapReturn {
   map: Ref<L.Map | null>;
   marker: Ref<L.Marker | null>;
   isReady: Ref<boolean>;
+  bounds: Ref<L.LatLngBounds | null>;
+  isInteracting: Ref<boolean>;
+
   createMarker: (coords: L.LatLngExpression) => void;
   removeMarker: () => void;
 
@@ -33,6 +36,8 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
   const map = ref<L.Map | null>(null);
   const marker = ref<L.Marker | null>(null);
   const isReady = ref(false);
+  const isInteracting = ref(false);
+  const bounds = ref<L.LatLngBounds | null>(null);
 
   function createMarker(coords: L.LatLngExpression) {
     if (!map.value) return;
@@ -52,10 +57,37 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     map.value?.setView(newCenter, MAP_CONFIG.DEFAULT_ZOOM);
   }
 
+  function setupMapEvents() {
+    if (!map.value) return;
+
+    map.value.on('movestart', () => {
+      isInteracting.value = true;
+    });
+
+    map.value.on('moveend', () => {
+      isInteracting.value = false;
+      bounds.value = map.value?.getBounds() ?? null;
+    });
+
+    map.value.on('zoomstart', () => {
+      isInteracting.value = true;
+    });
+
+    map.value.on('zoomend', () => {
+      isInteracting.value = false;
+      bounds.value = map.value?.getBounds() ?? null;
+    });
+
+    if (enableClick) {
+      map.value.on('click', (e: L.LeafletMouseEvent) => createMarker(e.latlng));
+    }
+  }
+
   async function initializeMap(): Promise<MapInitResult> {
     await import('leaflet/dist/leaflet.css');
 
     const container = document.getElementById(containerId);
+
     if (!container) {
       const errorMsg = `Container with id "${containerId}" not found in DOM`;
       console.error(errorMsg);
@@ -94,6 +126,10 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
         map.value.on('click', (e: L.LeafletMouseEvent) => createMarker(e.latlng));
       }
 
+      setupMapEvents();
+
+      bounds.value = map.value.getBounds();
+
       isReady.value = true;
 
       return {
@@ -122,6 +158,7 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     map.value?.remove();
     map.value = null;
     marker.value = null;
+    bounds.value = null;
     isReady.value = false;
   });
 
@@ -129,6 +166,8 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     map: map as Ref<L.Map>,
     marker: marker as Ref<L.Marker>,
     isReady,
+    isInteracting,
+    bounds,
     createMarker,
     removeMarker,
     setView,

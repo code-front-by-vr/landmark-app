@@ -23,7 +23,13 @@ import {
   type DocumentData,
   startAfter,
 } from '@/api/firebase';
-import type { Landmark, NewLandmarkInput, Photo } from '@/types/landmark';
+import type {
+  Landmark,
+  MapBounds,
+  NewLandmarkInput,
+  Photo,
+  UpdateLandmarkInput,
+} from '@/types/landmark';
 import { calculateRatingStats } from '@/lib';
 import { LANDMARK_CONFIG, FILE_UPLOAD_CONFIG, type Rating } from '@/config/constants';
 import type { Query } from 'firebase/firestore';
@@ -87,6 +93,47 @@ export async function getUserLandmarks(
   const snapshot = await getDocs(q);
 
   return snapshot.docs.map<Landmark>(doc => ({ id: doc.id, ...doc.data() }) as Landmark);
+}
+
+export async function getLandmarksByBounds(
+  bounds: MapBounds,
+  limitCount: number = LANDMARK_CONFIG.DEFAULT_LIMIT
+): Promise<Landmark[]> {
+  const q = query(landmarkCollection, orderBy('rating', 'desc'), limit(limitCount));
+  const snapshot = await getDocs(q);
+
+  const allLandmarks = snapshot.docs.map<Landmark>(
+    doc => ({ id: doc.id, ...doc.data() }) as Landmark
+  );
+
+  // ✅ Базовая фильтрация по bounds на клиенте
+  return allLandmarks.filter(landmark => {
+    const { lat, lng } = landmark.location;
+    return lat >= bounds.south && lat <= bounds.north && lng >= bounds.west && lng <= bounds.east;
+  });
+}
+
+export async function getUserLandmarksByBounds(
+  userId: string,
+  bounds: MapBounds,
+  limitCount: number = LANDMARK_CONFIG.DEFAULT_LIMIT
+): Promise<Landmark[]> {
+  const q = query(
+    landmarkCollection,
+    where('createdBy', '==', userId),
+    orderBy('rating', 'desc'),
+    limit(limitCount)
+  );
+  const snapshot = await getDocs(q);
+
+  const userLandmarks = snapshot.docs.map<Landmark>(
+    doc => ({ id: doc.id, ...doc.data() }) as Landmark
+  );
+
+  return userLandmarks.filter(landmark => {
+    const { lat, lng } = landmark.location;
+    return lat >= bounds.south && lat <= bounds.north && lng >= bounds.west && lng <= bounds.east;
+  });
 }
 
 export async function getPaginatedLandmarks(
@@ -197,12 +244,12 @@ export async function rateLandmark(
   return updatedLandmark;
 }
 
-export async function updateLandmark(
-  landmarkId: string,
-  landmark: NewLandmarkInput,
-  files: File[],
-  photoIdsToDelete: string[] = []
-): Promise<Landmark> {
+export async function updateLandmark({
+  landmarkId,
+  landmark,
+  files,
+  photoIdsToDelete,
+}: UpdateLandmarkInput): Promise<Landmark> {
   const landmarkRef = doc(db, 'landmarks', landmarkId);
   const landmarkDoc = await getDoc(landmarkRef);
 

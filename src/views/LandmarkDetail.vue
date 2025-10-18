@@ -80,14 +80,20 @@ async function updateMapWithLandmark() {
 }
 
 onMounted(async () => {
-  if (landmarkStore.landmarks.length === 0) {
-    await landmarkStore.fetchLandmarks();
-  }
-
   if (landmark.value) {
     await initializeMapWithLandmark();
   }
 });
+
+watch(
+  () => landmark.value,
+  async newLandmark => {
+    if (newLandmark && !isReady.value) {
+      await initializeMapWithLandmark();
+    }
+  },
+  { immediate: true }
+);
 
 watch(
   () => landmark.value?.location,

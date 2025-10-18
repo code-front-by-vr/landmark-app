@@ -36,3 +36,17 @@ export type NewLandmarkInput = Pick<
 > & {
   rating?: Rating;
 };
+
+export interface MapBounds {
+  north: number;
+  south: number;
+  east: number;
+  west: number;
+}
+
+export interface UpdateLandmarkInput {
+  landmarkId: string;
+  landmark: NewLandmarkInput;
+  files: File[];
+  photoIdsToDelete: string[];
+}

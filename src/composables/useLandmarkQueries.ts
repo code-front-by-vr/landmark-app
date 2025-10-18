@@ -2,7 +2,7 @@ import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/vue-que
 import * as landmarkService from '@/services/landmark';
 import type { DocumentData, QueryDocumentSnapshot } from '@/api/firebase';
 import { LANDMARK_CONFIG, type Rating } from '@/config/constants';
-import type { NewLandmarkInput } from '@/types/landmark';
+import type { NewLandmarkInput, UpdateLandmarkInput } from '@/types/landmark';
 
 export function useLandmarksQueries() {
   return useInfiniteQuery({
@@ -36,17 +36,8 @@ export function useLandmarkMutation() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({
-      landmarkId,
-      landmark,
-      files,
-      photoIdsToDelete,
-    }: {
-      landmarkId: string;
-      landmark: NewLandmarkInput;
-      files: File[];
-      photoIdsToDelete: string[];
-    }) => landmarkService.updateLandmark(landmarkId, landmark, files, photoIdsToDelete),
+    mutationFn: ({ landmarkId, landmark, files, photoIdsToDelete }: UpdateLandmarkInput) =>
+      landmarkService.updateLandmark({ landmarkId, landmark, files, photoIdsToDelete }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['landmarks'] });
     },
