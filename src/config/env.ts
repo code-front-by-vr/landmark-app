@@ -14,8 +14,8 @@ export function getRequiredEnvs(names: string[]): Record<string, string> {
   if (missing.length > 0) {
     const missingList = missing.map(v => `- ${v}`).join('\n');
     const message = `❌ Missing environment variables:\n${missingList}`;
-    alert(message);
-    throw new Error(message);
+    console.error(message);
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }
 
   return values;

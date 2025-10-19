@@ -4,6 +4,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
+  sendPasswordResetEmail,
   onAuthStateChanged,
   type User,
 } from 'firebase/auth';
@@ -21,8 +22,20 @@ import {
   limit,
   serverTimestamp,
   where,
+  runTransaction,
+  type Transaction,
+  startAfter,
+  type QueryDocumentSnapshot,
+  type DocumentData,
 } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  listAll,
+  deleteObject,
+} from 'firebase/storage';
 import { firebaseConfig } from '@/config/firebase';
 
 const app = initializeApp(firebaseConfig);
@@ -38,6 +51,7 @@ export {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
+  sendPasswordResetEmail,
   onAuthStateChanged,
   type User,
   addDoc,
@@ -50,9 +64,16 @@ export {
   ref,
   uploadBytes,
   getDownloadURL,
+  listAll,
+  deleteObject,
   query,
   orderBy,
   limit,
   serverTimestamp,
   where,
+  runTransaction,
+  type Transaction,
+  startAfter,
+  type QueryDocumentSnapshot,
+  type DocumentData,
 };

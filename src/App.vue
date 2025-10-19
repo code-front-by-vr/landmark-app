@@ -1,11 +1,10 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { RouterView } from 'vue-router';
+import { Toaster } from 'vue-sonner';
+import { TOASTER_CONFIG } from '@/config/constants';
+</script>
 
 <template>
-  <h1>You did it!</h1>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <RouterView />
+  <Toaster position="top-center" :duration="TOASTER_CONFIG.DURATION" richColors />
 </template>
-
-<style scoped></style>
