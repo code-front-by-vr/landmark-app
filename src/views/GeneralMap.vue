@@ -10,7 +10,8 @@ import LandmarkModal from '@/components/landmark/LandmarkModal.vue';
 import LandmarkList from '@/components/landmark/LandmarkList.vue';
 import { useLandmarkStore } from '@/stores/landmark';
 import { useLeafletMap } from '@/composables/useLeafletMap';
-import { MAP_CONFIG } from '@/config/constants';
+import { MAP_CONFIG, PERFORMANCE_CONFIG } from '@/config/constants';
+import { throttle } from '@/lib/performance';
 
 const router = useRouter();
 const isDialogOpen = ref(false);
@@ -37,36 +38,52 @@ const normalizedBounds = computed(() => {
 const mapLandmarks = computed(() => landmarkStore.mapLandmarks);
 const displayedLandmarks = computed(() => landmarkStore.landmarks);
 
+const markerMap = ref<Map<string, Marker>>(new Map());
+
 const updateMapMarkers = () => {
   if (!map.value) return;
 
-  markers.value.forEach(marker => {
-    marker.remove();
-    marker.off();
-    marker.closeTooltip();
-    marker.unbindTooltip();
+  const currentLandmarkIds = new Set(mapLandmarks.value.map(l => l.id));
+
+  markerMap.value.forEach((marker, landmarkId) => {
+    if (!currentLandmarkIds.has(landmarkId)) {
+      marker.remove();
+      marker.off();
+      marker.closeTooltip();
+      marker.unbindTooltip();
+      markerMap.value.delete(landmarkId);
+    }
   });
-  markers.value = [];
 
   mapLandmarks.value.forEach(landmark => {
-    const marker = leaflet
-      .marker([landmark.location.lat, landmark.location.lng])
-      .addTo(map.value!)
-      .bindTooltip(landmark.title, {
-        direction: 'top',
-        offset: [0, -10],
-        opacity: 0.9,
-        permanent: false,
-        className: 'custom-tooltip',
+    if (!markerMap.value.has(landmark.id)) {
+      const marker = leaflet
+        .marker([landmark.location.lat, landmark.location.lng])
+        .addTo(map.value!)
+        .bindTooltip(landmark.title, {
+          direction: 'top',
+          offset: [0, -10],
+          opacity: 0.9,
+          permanent: false,
+          className: 'custom-tooltip',
+        });
+
+      marker.on('click', () => {
+        router.push(`/landmark/${landmark.id}`);
       });
 
-    marker.on('click', () => {
-      router.push(`/landmark/${landmark.id}`);
-    });
-
-    markers.value.push(marker);
+      markerMap.value.set(landmark.id, marker);
+    }
   });
+
+  markers.value = Array.from(markerMap.value.values());
 };
+
+const throttledSetMapBounds = throttle((bounds: typeof normalizedBounds.value) => {
+  if (bounds) {
+    landmarkStore.setMapBounds(bounds);
+  }
+}, PERFORMANCE_CONFIG.DEFAULT_DELAY);
 
 async function toggleMyLandmarks() {
   await landmarkStore.toggleMyLandmarks();
@@ -76,7 +93,7 @@ watch(
   normalizedBounds,
   newBounds => {
     if (newBounds && !isInteracting.value) {
-      landmarkStore.setMapBounds(newBounds);
+      throttledSetMapBounds(newBounds);
     }
   },
   { immediate: true }
@@ -90,7 +107,7 @@ watch(isInteracting, interacting => {
 
 watch(map, newMap => {
   if (newMap && normalizedBounds.value) {
-    landmarkStore.setMapBounds(normalizedBounds.value);
+    throttledSetMapBounds(normalizedBounds.value);
   }
 });
 
@@ -99,7 +116,13 @@ watch([mapLandmarks, map], () => {
 });
 
 onUnmounted(() => {
-  markers.value.forEach(marker => marker.remove());
+  markerMap.value.forEach(marker => {
+    marker.remove();
+    marker.off();
+    marker.closeTooltip();
+    marker.unbindTooltip();
+  });
+  markerMap.value.clear();
   markers.value = [];
 });
 </script>

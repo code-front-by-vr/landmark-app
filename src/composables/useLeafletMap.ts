@@ -1,6 +1,7 @@
 import { ref, onMounted, onUnmounted, nextTick, type Ref } from 'vue';
 import * as L from 'leaflet';
-import { MAP_CONFIG } from '@/config/constants';
+import { MAP_CONFIG, PERFORMANCE_CONFIG } from '@/config/constants';
+import { debounce } from '@/lib/performance';
 
 interface UseLeafletMapOptions {
   containerId: string;
@@ -60,13 +61,17 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
   function setupMapEvents() {
     if (!map.value) return;
 
+    const updateBounds = debounce(() => {
+      bounds.value = map.value?.getBounds() ?? null;
+    }, PERFORMANCE_CONFIG.DEFAULT_DELAY);
+
     map.value.on('movestart', () => {
       isInteracting.value = true;
     });
 
     map.value.on('moveend', () => {
       isInteracting.value = false;
-      bounds.value = map.value?.getBounds() ?? null;
+      updateBounds();
     });
 
     map.value.on('zoomstart', () => {
@@ -75,8 +80,17 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
 
     map.value.on('zoomend', () => {
       isInteracting.value = false;
-      bounds.value = map.value?.getBounds() ?? null;
+      updateBounds();
     });
+
+    map.value.on(
+      'move',
+      debounce(() => {
+        if (!isInteracting.value) {
+          bounds.value = map.value?.getBounds() ?? null;
+        }
+      }, PERFORMANCE_CONFIG.DEFAULT_DELAY)
+    );
 
     if (enableClick) {
       map.value.on('click', (e: L.LeafletMouseEvent) => createMarker(e.latlng));

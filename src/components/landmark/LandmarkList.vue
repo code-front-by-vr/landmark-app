@@ -2,6 +2,8 @@
 import type { Landmark } from '@/types/landmark';
 import LandmarkCard from './LandmarkCard.vue';
 import { useLandmarkStore } from '@/stores/landmark';
+import { throttle } from '@/lib/performance';
+import { PERFORMANCE_CONFIG } from '@/config/constants';
 
 const props = defineProps<{
   landmarks: Landmark[];
@@ -9,14 +11,14 @@ const props = defineProps<{
 
 const landmarkStore = useLandmarkStore();
 
-function handleScroll(e: Event) {
+const handleScroll = throttle((e: Event) => {
   const target = e.target as HTMLElement;
   const { scrollTop, scrollHeight, clientHeight } = target;
 
-  if (scrollHeight - scrollTop - clientHeight < 100) {
+  if (scrollHeight - scrollTop - clientHeight < PERFORMANCE_CONFIG.SCROLL_THRESHOLD) {
     landmarkStore.loadMoreLandmarks();
   }
-}
+}, PERFORMANCE_CONFIG.DEFAULT_DELAY);
 </script>
 
 <template>

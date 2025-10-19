@@ -40,6 +40,11 @@ export const TOASTER_CONFIG = {
   DURATION: 4000,
 } as const;
 
+export const PERFORMANCE_CONFIG = {
+  DEFAULT_DELAY: 300,
+  SCROLL_THRESHOLD: 100,
+} as const;
+
 export const VALIDATION_MESSAGES = {
   EMAIL_REQUIRED: 'Email is required',
   EMAIL_INVALID: 'Enter a valid email',

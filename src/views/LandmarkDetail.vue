@@ -236,12 +236,13 @@ watch(
               <div
                 v-for="photo in landmark.photos"
                 :key="photo.id"
-                class="aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                class="aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity bg-muted"
                 @click="openPhotoPreview(photo.url)"
               >
                 <img
                   :src="photo.url"
                   :alt="`${landmark.title} - ${photo.fileName}`"
+                  loading="lazy"
                   class="w-full h-full object-cover"
                 />
               </div>
