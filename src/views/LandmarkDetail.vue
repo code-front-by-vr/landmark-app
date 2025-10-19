@@ -17,6 +17,7 @@ const landmarkStore = useLandmarkStore();
 const authStore = useAuthStore();
 
 const isEditDialogOpen = ref(false);
+const isInitialLoading = ref(true);
 const landmarkId = computed(() => route.params.id as string);
 const landmark = computed(() => landmarkStore.getLandmarkById(landmarkId.value));
 
@@ -33,12 +34,7 @@ const ratingsCount = computed(() => Object.keys(landmark.value?.userRatings || {
 
 const { map, isReady, createMarker, setView, initializeMap } = useLeafletMap({
   containerId: 'detail-map',
-  autoInit: false,
 });
-
-const handleEdit = () => {
-  isEditDialogOpen.value = true;
-};
 
 const handleBack = () => router.push('/map');
 
@@ -60,6 +56,12 @@ async function initializeMapWithLandmark() {
 
   await nextTick();
 
+  const mapContainer = document.getElementById('detail-map');
+  if (!mapContainer) {
+    console.warn('Map container not ready yet, skipping initialization');
+    return;
+  }
+
   const result = await initializeMap();
 
   if (result.success && map.value) {
@@ -80,7 +82,10 @@ async function updateMapWithLandmark() {
 }
 
 onMounted(async () => {
-  if (landmark.value) {
+  isInitialLoading.value = false;
+
+  await nextTick();
+  if (landmark.value && !isReady.value) {
     await initializeMapWithLandmark();
   }
 });
@@ -91,8 +96,7 @@ watch(
     if (newLandmark && !isReady.value) {
       await initializeMapWithLandmark();
     }
-  },
-  { immediate: true }
+  }
 );
 
 watch(
@@ -114,7 +118,7 @@ watch(
         Back to Map
       </Button>
 
-      <div v-if="landmarkStore.isLoading" class="text-center py-12">
+      <div v-if="isInitialLoading" class="text-center py-12">
         <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         <p class="text-muted-foreground mt-4">Loading landmark...</p>
       </div>
@@ -134,13 +138,17 @@ watch(
           <div v-if="isOwner" class="flex gap-2">
             <Dialog v-model:open="isEditDialogOpen">
               <DialogTrigger as-child>
-                <Button variant="outline" @click="handleEdit">
+                <Button variant="outline">
                   <Edit class="w-4 h-4 mr-2" />
                   Edit
                 </Button>
               </DialogTrigger>
               <DialogScrollContent class="z-[100] w-full max-w-2xl">
-                <LandmarkModal :landmark-id="landmark?.id" @close="isEditDialogOpen = false" />
+                <LandmarkModal
+                  v-if="isEditDialogOpen"
+                  :landmark-id="landmark?.id"
+                  @close="isEditDialogOpen = false"
+                />
               </DialogScrollContent>
             </Dialog>
 
