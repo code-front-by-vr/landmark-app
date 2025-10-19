@@ -76,17 +76,19 @@ function getUserRating() {
         <CardTitle class="text-lg line-clamp-1">{{ props.title }}</CardTitle>
         <CardDescription class="line-clamp-2">{{ props.description }}</CardDescription>
       </CardHeader>
-      <CardContent class="flex justify-between items-center">
-        <div class="flex items-center gap-1.5">
+      <CardContent class="flex flex-wrap justify-between items-center gap-2">
+        <div class="flex items-center gap-1.5 min-w-0">
           <Rating :model-value="Math.ceil(props.rating)" size="sm" @click="handleStarClick" />
-          <span class="text-sm text-muted-foreground ml-1">
+          <span class="text-sm text-muted-foreground ml-1 whitespace-nowrap">
             {{ props.rating.toFixed(1) }}
-            <span v-if="getUserRating()" class="text-xs">(yours: {{ getUserRating() }})</span>
+            <span v-if="getUserRating()" class="text-xs ml-0.5"
+              >(yours: {{ getUserRating() }})</span
+            >
           </span>
         </div>
-        <div class="flex items-center gap-1 text-sm text-muted-foreground">
+        <div class="flex items-center gap-1 text-sm text-muted-foreground whitespace-nowrap">
           <Eye class="w-4 h-4" />
-          <span>{{ props.visits }} visit{{ props.visits === 1 ? '' : 's' }}</span>
+          <span>{{ props.visits }}</span>
         </div>
       </CardContent>
     </Card>

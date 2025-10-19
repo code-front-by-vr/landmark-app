@@ -19,6 +19,8 @@ const authStore = useAuthStore();
 
 const isEditDialogOpen = ref(false);
 const isInitialLoading = ref(true);
+const isPhotoPreviewOpen = ref(false);
+const selectedPhoto = ref<string | null>(null);
 const landmarkId = computed(() => route.params.id as string);
 const landmark = computed(() => landmarkStore.getLandmarkById(landmarkId.value));
 
@@ -50,6 +52,16 @@ const handleDelete = async () => {
       console.error('Failed to delete landmark:', error);
     }
   }
+};
+
+const openPhotoPreview = (photoUrl: string) => {
+  selectedPhoto.value = photoUrl;
+  isPhotoPreviewOpen.value = true;
+};
+
+const closePhotoPreview = () => {
+  isPhotoPreviewOpen.value = false;
+  selectedPhoto.value = null;
 };
 
 async function initializeMapWithLandmark() {
@@ -224,7 +236,8 @@ watch(
               <div
                 v-for="photo in landmark.photos"
                 :key="photo.id"
-                class="aspect-square rounded-lg overflow-hidden"
+                class="aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                @click="openPhotoPreview(photo.url)"
               >
                 <img
                   :src="photo.url"
@@ -242,5 +255,18 @@ watch(
         <Button @click="handleBack" class="mt-4">Back to Map</Button>
       </div>
     </div>
+
+    <Dialog v-model:open="isPhotoPreviewOpen">
+      <DialogScrollContent class="max-w-4xl w-full p-0">
+        <div class="relative" @click="closePhotoPreview">
+          <img
+            v-if="selectedPhoto"
+            :src="selectedPhoto"
+            :alt="landmark?.title"
+            class="w-full h-auto max-h-[90vh] object-contain"
+          />
+        </div>
+      </DialogScrollContent>
+    </Dialog>
   </div>
 </template>
