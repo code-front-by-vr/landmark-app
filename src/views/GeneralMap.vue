@@ -40,7 +40,12 @@ const displayedLandmarks = computed(() => landmarkStore.landmarks);
 const updateMapMarkers = () => {
   if (!map.value) return;
 
-  markers.value.forEach(marker => marker.remove());
+  markers.value.forEach(marker => {
+    marker.remove();
+    marker.off();
+    marker.closeTooltip();
+    marker.unbindTooltip();
+  });
   markers.value = [];
 
   mapLandmarks.value.forEach(landmark => {

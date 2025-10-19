@@ -27,7 +27,7 @@ export function useLandmarkModal({
   const landmarkStore = useLandmarkStore();
 
   const landmark = computed(() => {
-    if (!landmarkId) return;
+    if (!landmarkId) return null;
 
     return landmarkStore.getLandmarkById(landmarkId);
   });
@@ -44,6 +44,7 @@ export function useLandmarkModal({
     validationSchema: formSchema,
     initialValues: {
       photos: [],
+      userRating: 0,
     },
   });
 
@@ -88,17 +89,17 @@ export function useLandmarkModal({
   onMounted(() => {
     error.value = null;
 
-    if (isEditMode.value && landmark.value) {
-      form.setFieldValue('title', landmark.value.title);
-      form.setFieldValue('description', landmark.value.description);
+    if (!isEditMode.value || !landmark.value) return;
 
-      if (authStore.user) {
-        const userRating = landmarkStore.getUserRating(landmark.value.id, authStore.user.uid);
-        if (userRating) {
-          form.setFieldValue('userRating', userRating);
-        }
-      }
-    }
+    form.setFieldValue('title', landmark.value.title);
+    form.setFieldValue('description', landmark.value.description);
+
+    if (!authStore.user) return;
+
+    const userRating = landmarkStore.getUserRating(landmark.value.id, authStore.user.uid);
+    if (!userRating) return;
+
+    form.setFieldValue('userRating', userRating);
   });
 
   const onSubmit = form.handleSubmit(async values => {

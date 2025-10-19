@@ -8,7 +8,7 @@ export function useLandmarksQueries() {
   return useInfiniteQuery({
     queryKey: ['landmarks'],
     queryFn: ({ pageParam }: { pageParam: QueryDocumentSnapshot<DocumentData> | null }) =>
-      landmarkService.getPaginatedLandmarks(pageParam),
+      landmarkService.getPaginatedLandmarks({ lastDoc: pageParam }),
     getNextPageParam: lastPage => lastPage.lastDoc ?? null,
     initialPageParam: null,
   });
@@ -17,7 +17,12 @@ export function useUserLandmarksQueries(userId: string) {
   return useInfiniteQuery({
     queryKey: ['landmarks', 'user', userId],
     queryFn: ({ pageParam }: { pageParam: QueryDocumentSnapshot<DocumentData> | null }) =>
-      landmarkService.getPaginatedLandmarks(pageParam, LANDMARK_CONFIG.DEFAULT_LIMIT, true, userId),
+      landmarkService.getPaginatedLandmarks({
+        lastDoc: pageParam,
+        limit: LANDMARK_CONFIG.DEFAULT_LIMIT,
+        onlyMy: true,
+        userId,
+      }),
     getNextPageParam: lastPage => lastPage.lastDoc ?? null,
     initialPageParam: null,
     enabled: !!userId,

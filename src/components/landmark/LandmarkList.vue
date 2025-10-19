@@ -28,13 +28,7 @@ function handleScroll(e: Event) {
     @scroll="handleScroll"
   >
     <template #default="{ item }">
-      <LandmarkCard
-        :id="item.id"
-        :title="item.title"
-        :description="item.description"
-        :rating="item.rating"
-        :visits="item.visits"
-      />
+      <LandmarkCard v-bind="item" />
     </template>
   </RecycleScroller>
 </template>

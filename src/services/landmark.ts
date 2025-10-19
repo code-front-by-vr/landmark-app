@@ -19,7 +19,6 @@ import {
   deleteDoc,
   listAll,
   deleteObject,
-  type QueryDocumentSnapshot,
   type DocumentData,
   startAfter,
 } from '@/api/firebase';
@@ -29,6 +28,7 @@ import type {
   NewLandmarkInput,
   Photo,
   UpdateLandmarkInput,
+  GetLandmarksParams,
 } from '@/types/landmark';
 import { calculateRatingStats } from '@/lib';
 import { LANDMARK_CONFIG, FILE_UPLOAD_CONFIG, type Rating } from '@/config/constants';
@@ -136,12 +136,14 @@ export async function getUserLandmarksByBounds(
   });
 }
 
-export async function getPaginatedLandmarks(
-  lastDoc: QueryDocumentSnapshot<DocumentData> | null = null,
-  maxCount: number = LANDMARK_CONFIG.DEFAULT_LIMIT,
-  onlyMy?: boolean,
-  userId?: string
-) {
+export async function getPaginatedLandmarks(params: GetLandmarksParams = {}) {
+  const {
+    lastDoc = null,
+    limit: maxCount = LANDMARK_CONFIG.DEFAULT_LIMIT,
+    onlyMy,
+    userId,
+  } = params;
+
   let q: Query<DocumentData, DocumentData> = query(
     landmarkCollection,
     orderBy('rating', 'desc'),

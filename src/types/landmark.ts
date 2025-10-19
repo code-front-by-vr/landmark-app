@@ -1,4 +1,5 @@
 import type { Rating } from '@/config/constants';
+import type { QueryDocumentSnapshot, DocumentData } from '@/api/firebase';
 
 export interface Location {
   readonly lat: number;
@@ -49,4 +50,11 @@ export interface UpdateLandmarkInput {
   landmark: NewLandmarkInput;
   files: File[];
   photoIdsToDelete: string[];
+}
+
+export interface GetLandmarksParams {
+  lastDoc?: QueryDocumentSnapshot<DocumentData> | null;
+  limit?: number;
+  onlyMy?: boolean;
+  userId?: string;
 }

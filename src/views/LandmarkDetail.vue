@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useLeafletMap } from '@/composables/useLeafletMap';
 import { Button } from '@ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ui/card';
+import { Rating } from '@ui/rating';
 import { MapPinned, Star, Eye, ArrowLeft, Edit, Trash2 } from 'lucide-vue-next';
 import { Dialog, DialogTrigger } from '@ui/dialog';
 import DialogScrollContent from '@ui/dialog/DialogScrollContent.vue';
@@ -176,7 +177,7 @@ watch(
             <CardHeader>
               <CardTitle class="text-lg flex items-center gap-2">
                 <Star class="w-5 h-5 text-yellow-500" />
-                Overall Rating
+                Overall score
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -198,16 +199,18 @@ watch(
             </CardContent>
           </Card>
 
-          <Card v-if="userRating !== null">
+          <Card>
             <CardHeader>
               <CardTitle class="text-lg">Your Rating</CardTitle>
             </CardHeader>
             <CardContent>
-              <div class="flex items-center gap-2">
-                <Star class="w-6 h-6 text-yellow-500 fill-yellow-500" />
-                <span class="text-2xl font-bold">{{ userRating }}</span>
-                <span class="text-muted-foreground">/ 5</span>
+              <div class="flex items-center gap-2 mb-2">
+                <Rating :model-value="userRating ?? 0" size="md" disabled />
               </div>
+              <p v-if="userRating !== null" class="text-sm text-muted-foreground">
+                {{ userRating }} / 5
+              </p>
+              <p v-else class="text-sm text-muted-foreground">Not rated yet</p>
             </CardContent>
           </Card>
         </div>

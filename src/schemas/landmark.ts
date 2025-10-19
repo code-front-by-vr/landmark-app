@@ -11,6 +11,7 @@ export const landmarkSchema = z.object({
   userRating: z.coerce
     .number({
       required_error: VALIDATION_MESSAGES.RATING_REQUIRED,
+      invalid_type_error: VALIDATION_MESSAGES.RATING_REQUIRED,
     })
     .refine(isValidRating, {
       message: VALIDATION_MESSAGES.RATING_RANGE,

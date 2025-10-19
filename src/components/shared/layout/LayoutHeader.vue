@@ -6,16 +6,14 @@ import { useAuthStore } from '@/stores/auth';
 
 const authStore = useAuthStore();
 
-const navLinks = computed(() => {
-  if (authStore.isAuthenticated) {
-    return [{ to: '/map', label: 'Map' }];
-  }
+const publicRoutes = [
+  { to: '/sign-in', label: 'Sign In' },
+  { to: '/register', label: 'Register' },
+];
 
-  return [
-    { to: '/sign-in', label: 'Sign In' },
-    { to: '/register', label: 'Register' },
-  ];
-});
+const privateRoutes = [{ to: '/map', label: 'Map' }];
+
+const currentRoutes = computed(() => (authStore.isAuthenticated ? privateRoutes : publicRoutes));
 
 function handleLogout() {
   authStore.logout();
@@ -44,37 +42,24 @@ function handleLogout() {
             </RouterLink>
           </li>
 
-          <template v-if="authStore.isAuthenticated">
-            <li v-for="link in navLinks" :key="link.to">
-              <RouterLink
-                :to="link.to"
-                class="text-md font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                active-class="!text-primary"
-              >
-                {{ link.label }}
-              </RouterLink>
-            </li>
-            <li>
-              <button
-                @click="handleLogout"
-                class="text-md font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-              >
-                Logout
-              </button>
-            </li>
-          </template>
+          <li v-for="link in currentRoutes" :key="link.to">
+            <RouterLink
+              :to="link.to"
+              class="text-md font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              active-class="!text-primary"
+            >
+              {{ link.label }}
+            </RouterLink>
+          </li>
 
-          <template v-else>
-            <li v-for="link in navLinks" :key="link.to">
-              <RouterLink
-                :to="link.to"
-                class="text-md font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                active-class="!text-primary"
-              >
-                {{ link.label }}
-              </RouterLink>
-            </li>
-          </template>
+          <li v-if="authStore.isAuthenticated">
+            <button
+              @click="handleLogout"
+              class="text-md font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
+              Logout
+            </button>
+          </li>
         </ul>
       </nav>
     </div>

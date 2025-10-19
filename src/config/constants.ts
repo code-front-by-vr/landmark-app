@@ -24,8 +24,20 @@ export const RATING_CONFIG = {
 
 export type Rating = 1 | 2 | 3 | 4 | 5;
 
+export type RatingSize = 'sm' | 'md' | 'lg';
+
+export const RATING_SIZE_MAP: Record<RatingSize, string> = {
+  sm: 'w-4 h-4',
+  md: 'w-6 h-6',
+  lg: 'w-8 h-8',
+} as const;
+
 export const LANDMARK_CONFIG = {
   DEFAULT_LIMIT: 10,
+} as const;
+
+export const TOASTER_CONFIG = {
+  DURATION: 4000,
 } as const;
 
 export const VALIDATION_MESSAGES = {
@@ -37,7 +49,7 @@ export const VALIDATION_MESSAGES = {
   PASSWORDS_DO_NOT_MATCH: 'Passwords do not match',
   TITLE_REQUIRED: 'Title is required',
   DESCRIPTION_REQUIRED: 'Description is required',
-  RATING_REQUIRED: 'Rating is required',
+  RATING_REQUIRED: 'Please select a rating from 1 to 5 stars',
   RATING_RANGE: `Rating must be between ${RATING_CONFIG.MIN} and ${RATING_CONFIG.MAX}`,
   PHOTOS_MIN: 'Please upload at least one photo',
   PHOTOS_MAX: `Maximum ${FILE_UPLOAD_CONFIG.MAX_FILES} photos allowed`,

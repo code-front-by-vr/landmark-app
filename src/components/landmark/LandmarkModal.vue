@@ -10,6 +10,7 @@ import { Input } from '@ui/input';
 import { Textarea } from '@ui/textarea';
 import { Button } from '@ui/button';
 import { Label } from '@ui/label';
+import { Rating } from '@ui/rating';
 import { Upload, MapPin, X } from 'lucide-vue-next';
 
 const props = defineProps<{
@@ -65,10 +66,6 @@ const uploadMessage = computed(() => {
 });
 
 const submitButtonText = computed(() => {
-  if (isLoading.value) {
-    return isEditMode.value ? 'Updating...' : 'Adding...';
-  }
-
   return isEditMode.value ? 'Update Landmark' : 'Add Landmark';
 });
 </script>
@@ -133,14 +130,10 @@ const submitButtonText = computed(() => {
         <FormItem>
           <FormLabel>Your Rating</FormLabel>
           <FormControl>
-            <Input
-              type="number"
-              v-bind="componentField"
-              min="1"
-              max="5"
-              step="1"
-              required
-              placeholder="1-5"
+            <Rating
+              :model-value="componentField.modelValue ?? 0"
+              @update:model-value="value => componentField['onUpdate:modelValue']?.(value)"
+              size="lg"
               :disabled="isLoading"
             />
           </FormControl>
@@ -239,7 +232,7 @@ const submitButtonText = computed(() => {
         </FormItem>
       </FormField>
       <DialogFooter class="flex justify-end">
-        <Button type="submit" :disabled="isLoading">
+        <Button type="submit" :loading="isLoading">
           {{ submitButtonText }}
         </Button>
       </DialogFooter>
