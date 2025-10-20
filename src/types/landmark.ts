@@ -1,0 +1,60 @@
+import type { Rating } from '@/config/constants';
+import type { QueryDocumentSnapshot, DocumentData } from '@/api/firebase';
+
+export interface Location {
+  readonly lat: number;
+  readonly lng: number;
+}
+
+export interface UserRatings {
+  readonly [userId: string]: Rating;
+}
+
+export interface Photo {
+  readonly id: string;
+  readonly url: string;
+  readonly uploadedAt: number;
+  readonly fileName: string;
+}
+
+export interface BasicLandmark {
+  title: string;
+  description: string;
+  location: Location;
+  photos?: readonly Photo[];
+  rating: number;
+  visits: number;
+  createdBy: string;
+  userRatings: UserRatings;
+}
+export interface Landmark extends BasicLandmark {
+  readonly id: string;
+}
+
+export type NewLandmarkInput = Pick<
+  BasicLandmark,
+  'title' | 'description' | 'location' | 'createdBy'
+> & {
+  rating?: Rating;
+};
+
+export interface MapBounds {
+  north: number;
+  south: number;
+  east: number;
+  west: number;
+}
+
+export interface UpdateLandmarkInput {
+  landmarkId: string;
+  landmark: NewLandmarkInput;
+  files: File[];
+  photoIdsToDelete: string[];
+}
+
+export interface GetLandmarksParams {
+  lastDoc?: QueryDocumentSnapshot<DocumentData> | null;
+  limit?: number;
+  onlyMy?: boolean;
+  userId?: string;
+}
