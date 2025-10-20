@@ -21,11 +21,7 @@ A modern web application for discovering, sharing, and rating landmarks around t
    ```bash
    npm install
    ```
-
-````
-
 2. **Create `.env` file in the root directory and specify Firebase environment variables:**
-
    ```env
    VITE_FIREBASE_API_KEY=your_api_key
    VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
@@ -33,7 +29,7 @@ A modern web application for discovering, sharing, and rating landmarks around t
    VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket
    VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
    VITE_FIREBASE_APP_ID=your_app_id
-````
+   ```
 
 3. **Prepare Husky for git hooks:**
 
@@ -46,16 +42,14 @@ A modern web application for discovering, sharing, and rating landmarks around t
    ```bash
    npm run dev
    ```
-
-````
-
 5. **Build the application:**
 
    ```bash
-npm run build
-````
+   npm run build
+   ```
 
 6. **Preview the built application locally using Vite:**
+
    ```bash
    npm run preview
    ```
