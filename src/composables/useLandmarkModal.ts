@@ -50,9 +50,9 @@ export function useLandmarkModal({
 
   const { marker } = useLeafletMap({
     containerId: mapContainerId,
-    center: landmark.value?.location ?? null,
+    center: landmark.value?.location || undefined,
     enableClick: true,
-    initialMarker: landmark.value?.location ?? null,
+    initialMarker: landmark.value?.location || undefined,
   });
 
   const existingPhotos = computed(
