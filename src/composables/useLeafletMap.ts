@@ -3,6 +3,13 @@ import * as L from 'leaflet';
 import { MAP_CONFIG, PERFORMANCE_CONFIG } from '@/config/constants';
 import { debounce } from '@/lib/performance';
 
+const customIcon = L.icon({
+  iconUrl: '/marker-icon.svg',
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+  popupAnchor: [0, -32],
+});
+
 interface UseLeafletMapOptions {
   containerId: string;
   center?: L.LatLngExpression;
@@ -44,7 +51,7 @@ export function useLeafletMap(options: UseLeafletMapOptions): UseLeafletMapRetur
     if (!map.value) return;
     removeMarker();
 
-    marker.value = L.marker(coords).addTo(map.value as unknown as L.Map);
+    marker.value = L.marker(coords, { icon: customIcon }).addTo(map.value as unknown as L.Map);
   }
 
   function removeMarker() {

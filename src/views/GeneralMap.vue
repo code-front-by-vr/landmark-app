@@ -13,6 +13,14 @@ import { useLeafletMap } from '@/composables/useLeafletMap';
 import { MAP_CONFIG, PERFORMANCE_CONFIG } from '@/config/constants';
 import { throttle } from '@/lib/performance';
 
+// Custom marker icon
+const customIcon = leaflet.icon({
+  iconUrl: '/marker-icon.svg',
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+  popupAnchor: [0, -32],
+});
+
 const router = useRouter();
 const isDialogOpen = ref(false);
 const markers = ref<Marker[]>([]);
@@ -58,7 +66,7 @@ const updateMapMarkers = () => {
   mapLandmarks.value.forEach(landmark => {
     if (!markerMap.value.has(landmark.id)) {
       const marker = leaflet
-        .marker([landmark.location.lat, landmark.location.lng])
+        .marker([landmark.location.lat, landmark.location.lng], { icon: customIcon })
         .addTo(map.value!)
         .bindTooltip(landmark.title, {
           direction: 'top',
