@@ -1,6 +1,6 @@
 # Landmark App
 
-🚀 **Live Demo**: [View Live Demo]([https://your-demo-url.com](https://landmark-app.vercel.app/))
+🚀 **Live Demo**: [View Live Demo](https://landmark-app.vercel.app/)
 
 A modern web application for discovering, sharing, and rating landmarks around the world. Built with Vue 3 and Firebase, featuring interactive maps, photo uploads, and user authentication.
 
